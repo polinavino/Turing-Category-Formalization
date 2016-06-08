@@ -17,6 +17,7 @@ Require Import CCC.
 Require Import Coq.Setoids.Setoid.
 Require Import Logic.
 Require Import Restriction.
+Require Import Coq.Lists.List.
 
 
 Open Scope nat_scope.
@@ -62,6 +63,7 @@ Proof.
            | S m' => cons (zel n l) (pcombine (S n) m' l x) end).
 Defined.
 
+(* The following two definitions give the semantics for minimalization *)
 Inductive allsucs : (nat -> nat -> Prop) -> nat -> Prop :=
   | allsucs_zero : forall (k : nat), forall (R : nat -> nat -> Prop), (R 0 (S k)) -> allsucs R 0
   | allsucs_Sn : forall (m k : nat), forall (R : nat -> nat -> Prop), R (S m) (S k) -> allsucs R m -> allsucs R (S m).
@@ -70,23 +72,145 @@ Inductive minl : (nat -> nat -> Prop) -> nat -> Prop :=
   | minl_zero : forall (R : nat -> nat -> Prop), (R 0 0) -> minl R 0
   | minl_Sn : forall (n : nat), forall (R : nat -> nat -> Prop), R (S n) 0 -> allsucs R n -> minl R (S n).
 
+
+Inductive converges_to_tot : prf -> list nat -> nat -> Prop :=
+  | conv_zero : forall (l : list nat), converges_to_tot Zero l 0
+  | conv_succ : converges_to_tot Succ nil (S 0) 
+  | conv_succ_nil : forall (l : list nat), forall x : nat, converges_to_tot Succ (cons x l) (S x) 
+  | conv_proj : forall (l : list nat), forall i : nat, converges_to_tot (Proj i) l (zel i l) 
+  | conv_sub : forall (l : list nat), forall (f g : prf), forall (n m x y : nat), converges_to_tot g l x 
+    -> converges_to_tot f (pcombine n m l x) y ->
+       converges_to_tot (Sub f g n m) l y
+  | conv_pr_nil : forall (B s : prf), forall (x : nat), converges_to_tot B nil x -> converges_to_tot (Rec B s) nil x
+  | conv_pr_l : forall (l : list nat), forall (B s : prf), forall (x : nat), converges_to_tot B l x 
+    -> converges_to_tot (Rec B s) (cons 0 l) x
+  | conv_pr : forall (l : list nat), forall (B s : prf), forall (x h r: nat), converges_to_tot (Rec B s) (cons h l) r ->
+       converges_to_tot s (cons h (cons r l)) x -> converges_to_tot (Rec B s) (cons (S h) l) x .
+
+
+
+(* prf convergence including minimalization *)
+Inductive converges_to : prf -> list nat -> nat -> Prop :=
+  | conv_to_tot : forall f : prf, forall ln : list nat, forall x : nat, 
+    converges_to_tot f ln x -> converges_to f  ln x
+  | conv_min : forall f : prf, forall ln : list nat, forall x : nat,  (minl (fun (h : nat) => (converges_to_tot f (cons h ln) )) x) ->
+      converges_to (Min f)  ln  x.
+
 (*
-Inductive minl : (nat -> nat -> Prop) -> nat -> Prop :=
-  | minl_zero : forall (R : nat -> nat -> Prop), (R 0 0) -> minl R 0
-  | minl_Sn_z : forall (n : nat), forall (R : nat -> nat -> Prop), R (S n) 0 -> allsucs R n -> minl R (S n).
-  | minl_SmSk : forall (k n : nat), forall (R : nat -> nat -> Prop), R (S (S n)) 0 -> R (S n) (S k) -> allsucs R n  -> minl R (S n).
-
-
-Inductive minl : (nat -> nat -> Prop) -> nat -> Prop :=
-  | minl_zero : forall (R : nat -> nat -> Prop), (R 0 0) -> minl R 0
-  | minl_Sn : forall (n : nat), forall (R : nat -> nat -> Prop), R (S n) 0 -> allsucs R n -> minl R (S n).
+Inductive converges_to : prf -> (forall (P : list nat -> Prop),  forall ln : list nat, P ln -> nat -> Prop) :=
+  | conv_to_tot : forall f : prf, forall ln : list nat, forall x : nat, 
+    converges_to_tot f ln x -> converges_to f (fun (h : list nat) => True) ln I x
+  | conv_min : forall f : prf, forall ln : list nat, forall x : nat,  forall dom_f : (minl (fun (h : nat) => (converges_to_tot f (cons h ln) )) x) ,
+      (minl (fun (h : nat) => (converges_to_tot f (cons h ln) )) x) ->
+      converges_to f (fun (hn : list nat) => (minl (fun (h : nat) => (converges_to_tot f (cons h hn) )) x) ) ln dom_f x.
 *)
 
-Check (fun (h : list nat) => True).
+(* convergence for a list of functions *)
+Fixpoint conv_prf_list (P : list nat -> Prop) (lf : list prf) (x : list nat) (w : P x) (y : list nat) : Prop :=
+(match lf with 
+           | nil => (match y with 
+                            | nil => True
+                            | h :: y' => False end)
 
-Definition consh_domain : forall P : list nat -> Prop, (forall ln : list nat, P ln) -> prf -> 
-    (exists ).
-  intros P D f.
+           | f :: lf' => (match y with 
+                            | nil => False
+                            | h :: y' => (converges_to f P x w h) /\ (conv_prf_list P lf' x w y') end) end).
+
+(* define obj and hom in the Comp(N) category *)
+Definition CompN_Obj : Type := { n : nat & { ln : list nat | length ln = n} }.
+
+Definition CompN_Morph (A B : CompN_Obj) : Type.
+Proof.
+  destruct A. destruct B. destruct s. destruct s0.
+  exact  ({ P : list nat -> Prop & {lf : list prf | (length lf = x0) /\
+    forall w : P x1, conv_prf_list P lf x1 w x2}}).
+Defined.
+
+(*
+Definition CompN_cProp (A B C : CompN_Obj) : CompN_Morph A B -> CompN_Morph B C -> (list nat -> Prop).
+Proof.
+  intros h1 h2 ln. destruct A; destruct B; destruct C. 
+  destruct s; destruct s0; destruct s1. destruct h1; destruct h2.
+  destruct s as [lst_prf1]; destruct s0 as [lst_prf2]. 
+  induction lst_prf2 as [f2 | lst2];
+  destruct a; destruct a0.
+  exact True. 
+  induction x4 as [c | cl].
+  rewrite <- e1 in H1. inversion H1.
+
+
+
+exact IHlst_prf2.
+  induction x1. inversion H1.
+  inversion H1.
+  
+
+ clear.
+  rewrite (proj1 (length_zero_iff_nil x4) H1). auto.
+  induction lst_prf1 as [f1 | lst1] ; 
+*)
+
+(* compose a prf : N^n -> N with a list of n prf's - not finished *)
+Definition CompN_comp1 (A B : CompN_Obj) : CompN_Morph A B -> prf -> list prf.
+Proof.
+  intros h1 p. destruct A; destruct B. 
+  destruct s; destruct s0. destruct h1.
+  induction s as [lst_prf1]. destruct p0.
+  
+; induction s0 as [lst_prf2]. 
+  destruct p; destruct p0.
+  compute. 
+
+(* compose lists of prf's - not finished *)
+Definition CompN_composition (A B C : CompN_Obj) : CompN_Morph A B -> CompN_Morph B C -> CompN_Morph A C.
+Proof.
+  intros h1 h2. destruct A; destruct B; destruct C. 
+  destruct s; destruct s0; destruct s1. destruct h1; destruct h2.
+  induction s as [lst_prf1]; induction s0 as [lst_prf2]. 
+  destruct p; destruct p0.
+  compute. 
+  exists (fun (ln : list nat) => ((x5 ln) /\ (∀ w : x5 ln, conv_prf_list x5 lst_prf1 ln w x3) /\ (x6 x3))).
+  compute. 
+  induction (length lst_prf2) as [l | sl].
+  
+ ; induction lst_prf2 as [f2 | lst2].
+  exists (fun (l : list nat) => True).
+  exists nil. split. compute in H1. auto. 
+  intro. compute in H1. rewrite <- e1 in H1. apply symmetry in H1.
+  rewrite (proj1 (length_zero_iff_nil x4) H1). auto.
+
+  compute in H2. destruct x1. 
+  generalize (proj1 (length_zero_iff_nil (lst2 :: lst_prf2)) H1).
+  intro. inversion H3.
+  compute in H2; compute in IHlst_prf2. 
+  inversion H1. rewrite H4. 
+  apply projT1 .
+  split.
+ compute.
+
+ rewrite  in H1.
+  assert (x4 = nil). induction x4. auto. compute. apply H1.
+  rewrite <- H1. compute. destruct x4. auto.  inversion w. 
+length (lst2 :: lst_prf2) = x1
+ apply induction. esplit. intro. exists. inversion. unfold converges_to.
+
+ apply proj1_sig . inversion lst_prf . split. apply exists.
+  destruct s; destruct s0. compute.
+  destruct snd. destruct snd0. destruct snd1. compute. 
+  compute in c.
+
+
+(* The rest of  code is formalizing some more things described in V. Zammit's paper
+We will likely take a slightly different approach to the rest of the formalization of Comp(N) *)
+
+Axiom conv_min_ax : forall (l : list nat), forall (f : prf), forall (x : nat), (minl (fun (h : nat) => (converges_to f (cons h l) )) x) ->
+       converges_to (Min f) l x.
+
+
+Axiom conv_min_ax : forall (l : list nat), forall (f : prf), forall (x : nat), forall ml : (minl (fun (h : nat) => (converges_to f (cons h l) )) x), 
+       converges_to (Min f) (fun (hn : list nat) => exists h1 : nat, (minl (fun (h : nat) => (converges_to f (cons h hn) )) h1 x) )  
+        l (hd_pf) x.
+
 
 Inductive converges_to : prf -> (forall (P : list nat -> Prop),  forall ln : list nat, P ln -> nat -> Prop) :=
   | conv_zero : forall (l : list nat), converges_to Zero (fun (h : list nat) => True) l I 0
@@ -102,18 +226,30 @@ Inductive converges_to : prf -> (forall (P : list nat -> Prop),  forall ln : lis
   | conv_pr : forall (l : list nat), forall (B s : prf), forall (x h r: nat), converges_to (Rec B s) (fun (h : list nat) => True) (cons h l) I r ->
        converges_to s (fun (h : list nat) => True) (cons h (cons r l)) I x -> converges_to (Rec B s) (fun (h : list nat) => True) (cons (S h) l) I x .
 
-Axiom conv_min_ax : forall (l : list nat), forall (f : prf), forall (x : nat), forall ml : (minl (fun (h : nat) => (converges_to f (cons h l) )) x), 
-       converges_to (Min f) (fun (hn : list nat) => exists h1 : nat, (minl (fun (h : nat) => (converges_to f (cons h l) )) x) ) ) l (hd_pf) x.
+
+
+(*
+Inductive minl : (nat -> nat -> Prop) -> nat -> Prop :=
+  | minl_zero : forall (R : nat -> nat -> Prop), (R 0 0) -> minl R 0
+  | minl_Sn_z : forall (n : nat), forall (R : nat -> nat -> Prop), R (S n) 0 -> allsucs R n -> minl R (S n).
+  | minl_SmSk : forall (k n : nat), forall (R : nat -> nat -> Prop), R (S (S n)) 0 -> R (S n) (S k) -> allsucs R n  -> minl R (S n).
+
+
+Inductive minl : (nat -> nat -> Prop) -> nat -> Prop :=
+  | minl_zero : forall (R : nat -> nat -> Prop), (R 0 0) -> minl R 0
+  | minl_Sn : forall (n : nat), forall (R : nat -> nat -> Prop), R (S n) 0 -> allsucs R n -> minl R (S n).
+*)
+
+Check (fun (h : list nat) => True).
 
 
 Axiom conv_min_ax : forall (l : list nat), forall (f : prf), forall (x : nat), (minl (fun (h : nat) => (converges_to f (cons h l) )) x) ->
        converges_to (Min f) l x.
 
 
-Definition CompN_Obj := list nat.
-  
-Definition CompN_Morph : fun (a b : CompN_Obj) => { P : a -> Prop & {f : prf | forall x : a, forall w : P w, exists y, converges_to_in_domain f P a w y}}.
-
+Definition consh_domain : forall P : list nat -> Prop, forall x : nat, (forall ln : list nat, P ln) -> prf -> 
+    (exists ).
+  intros P D f.
 
 Fixpoint natarity (p : prf) : nat :=
 match p with 

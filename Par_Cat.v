@@ -42,15 +42,8 @@ Defined.
 
 
 (* AXIOM equality in Par *)
-Lemma par_eqv_def : forall a b: obj, forall f g : hom a b, HomParEqv a b f g -> f = g.
- unfold HomParEqv. intros. destruct f. destruct g. destruct H. 
-generalize (pf_ir). intro. rewrite H1. in H.
-generalize (functional_extensionality b0).
-Check (existT (λ P : a → Prop, ∀ x1 : a, P x1 → b)).
-
-rewrite (pf_ir x). 
-
- compute. destruct b0. H.
+Axiom par_eqv_def : forall a b: obj, forall f g : hom a b, HomParEqv a b f g -> f = g.
+ 
 
 (* composition in Par *)
 Definition Compose : forall A B C : Set, hom A B -> hom B C -> hom A C.
@@ -223,6 +216,10 @@ Defined.
 
 (* define Par as an instance of a restruction category *)
 Instance Par_isRC : RestrictionCat Par_Cat rc_Par := {   }.
+
+
+(* Below we will show that Tot(Par) is isomorphic to Set 
+    This is not yet completed, and so does not compile *)
 
 Instance Par_isCRC : CartesianRestr
 
