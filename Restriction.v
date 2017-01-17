@@ -35,8 +35,7 @@ Defined.
 
 (* Type of a restriction combinator *)
 Definition rcType (C : Category): Type.
-Proof.
-  exact (forall a b : C, Hom a b -> Hom a a ).
+  exact (forall a b : C, @Hom C a b -> @Hom C a a ).
 Defined.
 
 
@@ -52,7 +51,6 @@ Class RestrictionComb `(C : Category) : Type :=
 
 }.
 
-(* Definition Has_RestrictionComb (C : Category) :=  RestrictionComb C. *)
 
 Coercion rc : RestrictionComb >-> rcType.
 
@@ -79,9 +77,25 @@ Instance RestrictionCatsAreCategories `{ RC: RestrictionCat  }  : Category := C.
 
 Coercion RestrictionCatsAreCategories : RestrictionCat >-> Category.
 
+(*
+Lemma idem_comp (C : Category) (rc : @RestrictionComb C) (RC : @RestrictionCat C rc) : forall
+  (a : RC) (e e' : Hom a a) (pe : e ∘ e = e) (pe' : e' ∘ e' = e'), (e ∘ e') ∘ (e ∘ e') = e ∘ e'.
+Proof.
+  intros. rewrite assoc. rewrite pe.
+*)
+
+(* restriction idempotents closed under composition *)
+Lemma r_idem_comp `{RC : RestrictionCat}
+  (a : RC) (e e' : Hom a a) (pe : (rc a a e) = e) (pe' : (rc a a e') = e') : (rc a a (e ∘ e')) = e ∘ e'.
+Proof.
+  destruct RC. destruct rc0. destruct C. transitivity (rc0 a a (e ∘ (rc0 _ _ e'))). 
+  compute. compute in pe'. rewrite pe'. auto.
+  compute in rc7. compute. rewrite (rc7 _ _ _ e' e).
+  compute in pe. compute in pe'. rewrite pe. rewrite pe'. auto.
+Defined.
+
 (* id is a total map *)
 Definition IdIsTotal `{RC : RestrictionCat} : ∀ a : C, rc _ _ (id a) = id a.
-Proof.
   intro; destruct C;  destruct RC; destruct rc0; compute.
   rewrite <- (id_unit_left a a (rc0 a a (id a))).
   compute in rc5.
@@ -91,7 +105,6 @@ Defined.
 
 (* X is a retract of Y when *)
 Definition isRetractOf `{C : Category} : Obj -> Obj -> Prop.
-Proof.
   intros x y.
   exact (exists m : Hom x y, exists r : Hom y x, r ∘m = id x).
 Defined.
@@ -111,7 +124,6 @@ Defined.
 
 (* Collection of total maps in a restriciton category - all maps such that their restriction is the identity map *)
 Definition TotMaps `{C : Category} `(rc : @RestrictionComb C) (RC : RestrictionCat C rc) : ∀ a b, Hom a b → Prop.
-Proof.
   destruct RC.
   destruct rc.
   intros a b f.
@@ -121,7 +133,6 @@ Defined.
 
 (* A subcategory of a restriction category with the same objects as the restriction category and only the total maps *)
 Definition Tot `{C : Category} `(rc : @RestrictionComb C) : RestrictionCat C rc -> Category.
-Proof.
   intros R. 
   apply (Wide_SubCategory C (TotMaps rc R)); destruct C; destruct R; destruct rc; intros; unfold TotMaps; compute.
  
@@ -182,7 +193,6 @@ Definition TotR `{C : Category} `(rc : @RestrictionComb C) `(RC : @RestrictionCa
 
 (* map ordering based on their restrictions *)
 Definition lt_eq `{RC : RestrictionCat} (a b : RC) (f g : Hom a b) : Prop.
-Proof.
   destruct C; destruct RC; destruct RCat_RC0.
   exact (g ∘(rc a b f) = f).
 Defined.
@@ -190,7 +200,6 @@ Defined.
 
 (* consider total subcategory object a as an object of to full restriction category *)
 Definition fc `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} (a : TotR rc RC) : RC.
-Proof.
   destruct C; destruct RC; destruct a.
   compute in x.
   compute.
@@ -199,7 +208,6 @@ Defined.
 
 (* consider total subcategory object a as an object of to full restriction category *)
 Definition sc `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} (a : RC) : TotR rc RC.
-Proof.
   destruct C ; destruct RC. compute in a.
   compute.
   exists a; auto.
@@ -233,12 +241,16 @@ Class ParProd `{RC : RestrictionCat} (a b : RC)  : Type :=
 
 Coercion p_prod : ParProd >-> Obj.
 
+
 Definition Has_pProducts `{RC : RestrictionCat }  : Type := ∀ a b, ParProd a b.
+
+(*
+Definition Has_pProducts `(C : Category)  `(rc : @RestrictionComb C) `(RC : @RestrictionCat C rc) : Type := ∀ a b, ParProd a b.
+*)
 
 (* define total projection maps in a total subcategory of a cartesian restriciton category *)
 Definition Pi_1map `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}  : forall (a b : TotR rc RC), 
    forall (aXPb : ParProd (fc rc a) (fc rc b)), Hom (sc rc aXPb) a.
-Proof.
   destruct (TotR rc RC).
   destruct aXPb as [aXPb]. 
   destruct C; destruct RC. destruct rc.
@@ -248,7 +260,6 @@ Defined.
 
 Definition Pi_2map `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}  : forall (a b : TotR rc RC), 
    forall (aXPb : ParProd (fc rc a) (fc rc b)), Hom (sc rc aXPb) b.
-Proof.
   destruct (TotR rc RC).
   destruct aXPb as [aXPb]. 
   destruct C; destruct RC. destruct rc.
@@ -260,7 +271,6 @@ Defined.
 (* define total unique product map in a total subcategory of a cartesian retriction category *)
 Definition Prod_morphs `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}  : forall (a b : TotR rc RC), 
    forall (aXPb : ParProd (fc rc a) (fc rc b)), (∀ (p : TotR rc RC) (r1 : Hom p a) (r2 : Hom p b), Hom p (sc rc aXPb)).
-Proof.
   destruct aXPb as [aXPb]; destruct (TotR rc RC); intros; simpl.
   intros. compute. compute in pProd_morph_ex0.
   destruct C; destruct RC. compute in r1; compute in r2.
@@ -277,7 +287,6 @@ Defined.
 (* define products in a total subcategory of a restriction category *)
 Definition defProdInTot `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}  : forall (a b : TotR rc RC), 
    forall (aXPb : ParProd (fc rc a) (fc rc b)), (Product a b).
-Proof.
   intros.
 
   exists (sc rc aXPb) (Pi_1map rc a b aXPb) (Pi_2map rc a b aXPb) (Prod_morphs rc a b aXPb); 
@@ -368,10 +377,28 @@ Class ParTerm `{RC : RestrictionCat} : Type :=
   pt_morph_unique_greatest : ∀ (a b : Obj) (f : Hom a b), ((pt_morph b) ∘f) = (pt_morph a) ∘rc _ _ f
 }.
 
-
 Coercion p_term : ParTerm >-> Obj.
 
 (* a partial terminal object in a restriction category is a terminal object in its total subcategory *)
+Definition defTermInTot `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}  : 
+   forall t : ParTerm , Terminal (TotR rc RC).
+  intros. destruct t. exists (sc rc p_term0);
+  destruct RC ; destruct C; destruct rc; simpl; intros.
+  exists (pt_morph0 (proj1_sig d)).
+  simpl in morph_total0.
+  apply (morph_total0 (proj1_sig d)).
+  destruct f as [f]; destruct g as [g]. 
+  assert (f = pt_morph0 (proj1_sig d)). simpl in pt_morph_unique_greatest0.
+  generalize ( pt_morph_unique_greatest0 (proj1_sig d) p_term0 f); intro.
+  simpl in morph_total0. rewrite e in H. rewrite id_unit_right in H.
+  rewrite <- H. rewrite <- id_is_ptm0. simpl. rewrite id_unit_left. auto.
+  assert (g = pt_morph0 (proj1_sig d)). simpl in pt_morph_unique_greatest0.
+  generalize ( pt_morph_unique_greatest0 (proj1_sig d) p_term0 g); intro.
+  simpl in morph_total0. rewrite e0 in H0. rewrite id_unit_right in H0.
+  rewrite <- H0. rewrite <- id_is_ptm0. simpl. rewrite id_unit_left. auto.
+  assert (f = g). rewrite H; rewrite H0. auto.
+  apply pf_ir.
+Defined.
 
 
 (* a restriction category with a restriction terminal object and restriction products is a Cartesian restriction category *)
@@ -385,6 +412,20 @@ Class CartRestrictionCat `{C : Category} `(rc : @RestrictionComb C) `{RC : @Rest
 Instance CartRestrictionCatsAreCategories `(C : Category) `(rc : @RestrictionComb C) `(RC : @RestrictionCat C rc) `(CRC : @CartRestrictionCat C rc RC)  : RestrictionCat C rc := RC.
 
 Coercion CartRestrictionCatsAreCategories : CartRestrictionCat >-> RestrictionCat.
+
+
+(* point map - a total map with terminal object as source *)
+Definition point `{C : Category} `(rco : @RestrictionComb C) `{RC : @RestrictionCat C rco}
+  `{CRC : @CartRestrictionCat RC rco RC} (a : CRC) := { p : Hom (RCat_term) a | rc _ _ p = id _ }.
+
+(*AXIOM Kleene equality *)
+Definition Kl_eq `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}
+  `{CRC : @CartRestrictionCat RC rc RC} (a b : CRC) (f g : Hom a b) := 
+(forall  (p : point rc a) , f ∘ (proj1_sig p) = g ∘ (proj1_sig p)) . 
+
+(* extensionality in CRCs *)
+Definition is_ext `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}
+  `{CRC : @CartRestrictionCat RC rc RC}  := forall (a b : CRC) (f g : Hom a b), ( Kl_eq rc a b f g <-> f = g ).
 
 
 (* in a CRC, X x 1 and 1 x X are isomorphic to X *)
@@ -493,9 +534,6 @@ Proof.
 
 (* id tXx and map to x *)
   compute in pProd_morph_unique0.
-(*  destruct (pProd_morph_unique0 p_prod0 Pi_1p0 (pt_morph0 p_prod0)
-                     (compose p_prod0 x p_prod0 Pi_1p0 (pProd_morph_ex0 x (id x) (pt_morph0 x)))  ).
-*)
   assert (c1 : compose p_prod0 p_prod0 p_term0 (rc0 p_prod0 p_term0 (compose p_prod0 p_prod0 p_term0 
       (compose p_prod0 x p_prod0 Pi_2p0 (pProd_morph_ex0 x (pt_morph0 x) (id x)))
          Pi_1p0)) (pt_morph0 p_prod0) =  compose p_prod0 p_prod0 p_term0 
@@ -621,87 +659,103 @@ Proof.
 Defined.
 
 
-(* a map f : Z x X -> Y admits a T_{x,y} index when *)
-Definition fAdmitsTxy `{CRC : CartRestrictionCat} (a x y : RC) (aXx : ParProd a x) (Txy : Hom aXx y) : 
-   forall z : RC, forall zXx : ParProd z x, (Hom  zXx y) -> Prop.
+(* lemma shows <f, g> h = <fh, gh> distributivity over total products also *)
+Lemma TotProdMapComp `(C : Category ) : forall (a b c d : C), forall (aXb : Product a b), 
+    forall (f : Hom c a), forall (g : Hom c b), forall (h : Hom d c),
+   (Prod_morph_ex _ _ f g) ∘h = Prod_morph_ex _ _ (f ∘h) (g ∘h).
 Proof.
-  intros z zXx f.
-  exact (exists (h : Hom z a), (TotMaps _ _ _ _ h) /\ (f = Txy ∘(pProd_morph_ex zXx (h ∘Pi_1p) Pi_2p))).
+  intros. destruct C; destruct aXb as [aXb]. compute.
+  compute in Prod_morph_unique. rewrite (Prod_morph_unique _ 
+    (f ∘h) (g ∘h) (compose d c aXb h (Prod_morph_ex c f g))
+      (Prod_morph_ex d (compose d c a h f) (compose d c b h g))).
+  auto. compute. rewrite <- assoc. rewrite Prod_morph_com_1. auto.
+  compute. rewrite <- assoc. rewrite Prod_morph_com_2. auto.
+  compute. rewrite Prod_morph_com_1. auto.
+  compute. rewrite Prod_morph_com_2. auto.
 Defined.
 
-(* a T_{x,y} index is universal when *)
-Definition TxyUniv `{CRC : CartRestrictionCat} (a x y : RC) (aXx : ParProd a x) (Txy : Hom aXx y) : Prop .
-Proof.
-  exact (forall z : RC, forall zXx : ParProd z x, forall (f : Hom zXx y), fAdmitsTxy a x y aXx Txy z zXx f).
-Defined.
-
-(* A is a Turing object when *)
-Definition TuringObj `{CRC : CartRestrictionCat} (a : RC) : Prop := 
-  forall x y, forall (aXx : ParProd a x), exists (Txy : Hom aXx y), TxyUniv a x y aXx Txy.
-
-(* a Cartesian restriction category with a Turing object is a Turing category *)
-Class TuringCat `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC}  (A : Obj) : Type :=
-{
-  AisTuring : TuringObj A 
-}.
 
 
+ Record nth_ProdT `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
+:=  { npT : Type; npel:> npT; npobj : npT → CRC}.
 
-(* every object in a Turing category is a retract of a Turing object *)
-Lemma everyObjisRetract `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
-  `(A : Obj) `{T : @TuringCat C rc RC CRC A} : forall x : C, isRetractOf x A.
-Proof.
-  intros.
-  unfold isRetractOf.
-  generalize (xX1and1XxIsox CRC); intro xX1and1XxIsox.
-  generalize (ProdMapComp CRC); intro ProdMapComp.
-  destruct T; destruct C; destruct RC; destruct CRC;  destruct rc.
-  generalize (IdIsTotal x) ; compute; intros IdT.
-  compute in AisTuring0; compute in x; compute in A;  compute in rc0.
-  compute in xX1and1XxIsox.
-  generalize (xX1and1XxIsox x RCat_term0).
-  destruct RCat_term0. 
-  generalize (ProdMapComp A p_term0 A x (RCat_HP0 A p_term0)); intro ProdMapCompA1.  
-  generalize (ProdMapComp A p_term0 (RCat_HP0 x p_term0) x (RCat_HP0 A p_term0)); intro ProdMapCompA2.  
-  compute in ProdMapCompA1; compute in ProdMapCompA2.
-  intro xX1Isox.
-  compute in p_term0; compute in pt_morph0; compute in RCat_HP0.
+ Fixpoint nthProdC `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
+(A : CRC) (n : nat) : nth_ProdT  rc  :=
+  match n with
+  | O => {| npT := (@ParTerm _ rc CRC); npel := (@RCat_term CRC rc CRC CRC); npobj :=  (@p_term CRC rc CRC )|}
+  | S m =>  {| npT := @ParProd _ rc CRC A (npobj rc (nthProdC rc A m) (nthProdC rc A m));
+        npel := @RCat_HP CRC rc CRC CRC A (npobj rc (nthProdC rc A m) (nthProdC rc A m));
+        npobj := @p_prod CRC rc CRC _ _ |}
+end.
+    
 
-  generalize (AisTuring0 p_term0 x (RCat_HP0 A p_term0)); destruct (RCat_HP0 A p_term0) as [AX1]; intro THyp. 
+ Definition nth_Prod_obj `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
+    (np : nth_ProdT rc) : CRC := npobj rc np np.
+ Coercion nth_Prod_obj : nth_ProdT >-> Obj.
 
-  destruct THyp as [Tmap THyp1] . 
-  generalize (THyp1 x (RCat_HP0 x p_term0)).
+ Fixpoint arrow_to_nthProd `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC}
+(A B : CRC) (f : Hom B A) (n : nat) :
+  Hom B (nthProdC rc A n)  :=
+  match n with
+  | O => @pt_morph CRC rc CRC (@RCat_term CRC rc CRC CRC) B
+  | S m => @pProd_morph_ex CRC rc CRC _ _ _ _ f (arrow_to_nthProd rc A B f m)
+  end.
 
-  compute in xX1Isox; destruct xX1Isox as [iso1 iso2].
-  generalize (iso1  (RCat_HP0 x p_term0)) .
+(*
+(* A^n product in an cartesian restriction category *)
+Fixpoint nthProdfix `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} ( RCat_term : ParTerm ) (RCat_HP : Has_pProducts )
+(A : RC) (n : nat) : RC := 
+match n with
 
-  destruct (RCat_HP0 x p_term0) as [xX1]; intros [iso11 iso12] THyp.
-  destruct (THyp Pi_1p1) as [PiTxX1 H]; destruct H.
-  exists PiTxX1.
-  exists ( Tmap ∘(pProd_morph_ex0 A (id A) (pt_morph0 A))).
-  compute; rewrite assoc.
-  assert (temp : id x = compose _ _ _ (pProd_morph_ex1 x (id x) (pt_morph0 x))  (compose xX1 AX1 x (pProd_morph_ex0 xX1 (compose xX1 x A Pi_1p1 PiTxX1) Pi_2p1) Tmap)  ).
-  rewrite <- H0; exact iso12.
-  rewrite assoc in temp.
-  rewrite ProdMapCompA1. rewrite id_unit_left. compute in pt_morph_unique_greatest0. rewrite (pt_morph_unique_greatest0).
-  rewrite H. rewrite id_unit_right.
-  rewrite ProdMapCompA2 in temp.
-  compute in pProd_morph_com_6. rewrite <- pProd_morph_com_6 in temp.
-  compute in rc_d0; rewrite rc_d0 in temp.
-  compute in Pi_2Tot1; rewrite Pi_2Tot1 in temp. rewrite id_unit_left in temp.
-  compute in pProd_morph_rest1; rewrite <- pProd_morph_rest1 in temp.
-  rewrite IdT in temp. rewrite id_unit_left in temp. 
-  compute in rc5; rewrite rc5 in temp.
-  rewrite assoc in temp.
-  rewrite temp.
-  compute in pProd_morph_com_5; rewrite <- pProd_morph_com_5.
-  rewrite rc_d0. compute in Pi_1Tot1; rewrite Pi_1Tot1.
-  rewrite id_unit_left . rewrite id_unit_left .
-  rewrite <- pProd_morph_rest1.
-  rewrite IdT; compute in morph_total0; rewrite morph_total0.
-  rewrite id_unit_left . rewrite id_unit_right; auto.
-Defined.
+  | 0 => RCat_term
+  | S 0 => A
+  | S m => (RCat_HP A (nthProdfix rc RCat_term RCat_HP A m))
 
+end.
+
+
+
+Definition nthProdcoer `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} ( RCat_term : ParTerm ) (RCat_HP : Has_pProducts )
+`(A : Obj) `(n : nat) (B : RC) (pf : B = (nthProdfix rc RCat_term RCat_HP A (S (S n)))) : ParProd A (nthProdfix rc RCat_term RCat_HP A (S n)).
+simpl in pf. simpl. generalize dependent pf. intro B. destruct B. elim B.
+ exists (RCat_HP A
+      match n with
+      | 0 => A
+      | S _ => RCat_HP A (nthProdfix rc RCat_term RCat_HP A n)
+      end). rewrite pf. destruct pf. 
+assert ( B
+
+generalize B. rewrite pf in RC. elim pf. exact B.
+: forall nthPobj : {nthP : nat*Obj & ((snd nthP) = (nthProdfix rc RCat_term RCat_HP A (fst nthP)) )} ,
+ParProd A (nthProdfix rc RCat_term RCat_HP A ((fst (projT1 nthPobj)) - 1)).
+intro. destruct nthPobj as [nthP e]. destruct nthP as [n An].
+simpl in e. unfold nthProdfix. simpl. unfold nthProdfix in e.
+induction n. simpl. rewrite <- e. exact (RCat_HP  A An). 
+replace (S n - 1) with n. 
+
+assert (forall m, RCat_HP A (nthProdfix rc RCat_term RCat_HP A m) = (nthProdfix rc RCat_term RCat_HP A (S m))).
+ := (nthProdfix rc RCat_term RCat_HP A (S n)).
+
+
+(* A^n product in an cartesian restriction category *)
+Fixpoint nthProdfix `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} ( RCat_term : ParTerm ) (RCat_HP : Has_pProducts )
+(A : RC) (n : nat) : RC := 
+match n with
+
+  | 0 => (RCat_HP A A)
+  | S 0 => (RCat_HP A A)
+  | S m => (RCat_HP A (nthProdfix rc RCat_term RCat_HP A m))
+
+end.
+
+Fixpoint nProdEq `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} ( RCat_term : ParTerm ) (RCat_HP : Has_pProducts )
+(A : RC) (n : nat) : Prop :=
+match n 
+
+Definition nthProd `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} ( RCat_term : ParTerm ) (RCat_HP : Has_pProducts )
+(A : RC) (n : nat)  : (p : ParProd A (nthProdfix rc RCat_term RCat_HP A n)) .
+
+Coercion nthProdfix : Obj >-> ParProd.
 
 (* A^n product in an cartesian restriction category *)
 Fixpoint nthProd `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} ( RCat_term : ParTerm ) (RCat_HP : Has_pProducts )
@@ -714,11 +768,20 @@ match n with
 
 end.
 
+
 Definition nthProdC `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
 (A : CRC) (n : nat) : CRC.
 Proof.
   exact (nthProd rc RCat_term RCat_HP A n).
 Defined.
+*)
+(*
+Definition nthProdisProd `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
+(A : CRC) (n : nat) : ParProd 
+
+Instance nthProdisTerm `{ RC: RestrictionCat  }  : Category := C.
+
+Coercion nthProdisProd : CRC >-> ParProd. *)
 
 Definition prod2TypeN `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
 (A : CRC) := Hom ( RCat_HP A (nthProdC rc A (S 0))) A .
@@ -729,7 +792,7 @@ Definition prod2TypeHP `{C : Category} `{rc : @RestrictionComb C} `{RC : @Restri
 Definition projto_2ndA `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
 `{CRC : @CartRestrictionCat C rc RC} (A : Obj) (n : nat) : Hom (nthProdC rc A (S n))  A.
 Proof. 
-  destruct n; unfold nthProdC; simpl. exact (id A).
+  destruct n; unfold nthProdC; simpl. exact (Pi_1p).
    simpl. exact Pi_1p. 
 Defined.
 
@@ -741,69 +804,17 @@ Proof.
 Defined.
 
 Definition projto_restAs `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : RC) (n : nat) : Hom (RCat_HP A (nthProd rc RCat_term RCat_HP A (S n)))  (nthProd rc RCat_term RCat_HP A n).
+`{CRC : @CartRestrictionCat C rc RC} (A : RC) (n : nat) : Hom (RCat_HP A (nthProdC rc A (S n)))  (nthProdC rc A n).
 Proof. 
-  simpl. destruct n. simpl. exact (pt_morph (RCat_HP A A)). exact (proj_twice A A  (nthProdC rc A (S n))).
+  simpl. destruct n. simpl. exact (pt_morph _). exact (proj_twice A A  (nthProdC rc A (S n))).
 Defined.
 
-Definition bulletn_once `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : RC) (n : nat) (bullet : Hom (RCat_HP A A) A) : 
-Hom ( RCat_HP A (nthProdC rc A (S n))) ( RCat_HP A (nthProdC rc A n)) .
-Proof.
-  assert (p1 : Hom (RCat_HP A (nthProdC rc A (S n))) A).
-  destruct  (RCat_HP A (nthProdC rc A (S n))). exact (Pi_1p0).
-  exact (pProd_morph_ex (RCat_HP A (nthProdC rc A (S n))) (bullet  ∘(pProd_morph_ex (RCat_HP A (nthProdC rc A (S n))) 
-    p1 ((projto_2ndA A n) ∘Pi_2p) ))
-  (projto_restAs A n)).
-Defined.
-
-
-(* n-fold application of bullet *)
-Fixpoint bullet_n `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
- (A : Obj) (n : nat) (bullet : Hom (RCat_HP A A) A) : Hom ( RCat_HP A (nthProd rc RCat_term RCat_HP A n)) A  := 
-match n with
-  | 0 => bullet ∘(pProd_morph_ex A (id A) (id A)) ∘Pi_1p
-  | S m => (bullet_n A m bullet ) ∘(bulletn_once  A m bullet)
-end.
-
-Open Scope list_scope.
-
-(* n-fold product of maps A^n -> A *)
-Fixpoint pProd_morph_ex_n `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
- (A : Obj) (n : nat) (lf : list (Hom (nthProdC rc A n) A)) : Hom (nthProdC rc A n) (nthProdC rc A (length lf))  := 
-match lf with
-  | nil => pt_morph (nthProdC rc A n)    
-  | f :: nil => f
-  | f :: lf' => (pProd_morph_ex (nthProdC rc A n) f (pProd_morph_ex_n A n lf' ))
-end.
 
 (*
 Lemma mCoordDecomp `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
  (A : Obj) (n m : nat) (f : Hom (nthProdC rc A n) (nthProdC rc A m)) : exists (lf : list (Hom (nthProdC rc A n) A)), 
   (m = length lf) ->  f = (pProd_morph_ex_n A n lf).
 *)
-
-(* What it means for f : A^n -> A to be an computable *)
-Definition f_comp `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) (n : nat) (f : Hom (nthProdC rc A n) A) : Prop := 
-  exists (p : Hom RCat_term A), f = (bullet_n A n bullet) ∘(pProd_morph_ex (nthProdC rc A n) 
-    (p ∘(pt_morph (nthProdC rc A n))) (id (nthProdC rc A n))).
-
-(* What it means for (A, bullet) to be an applicative structure, shown for each n *)
-Fixpoint isAppStructForn `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) 
-  (n : nat) (lf : list (Hom (nthProdC rc A n) A))  : Prop :=
-match lf with
-  | nil => True
-  | f :: lf' => (f_comp A bullet n f) /\ (isAppStructForn A bullet n lf' )
-end.
-
-(* What it means for (A, bullet) to be an applicative structure *)
-Definition isAppStruct `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) : Prop :=
-forall (n : nat), forall (lf : list (Hom (nthProdC rc A n) A)), isAppStructForn A bullet n lf.
-
-
 
 Instance CCCsAreCategories `{C : Category} `{ aCCC : @CCC  C}  : Category := C.
 
@@ -822,6 +833,12 @@ Proof.
   rewrite id_unit_right. rewrite id_unit_left. auto. 
 Defined.
 
+
+Instance triv_RCat `{C : Category} : RestrictionCat C triv_RC.
+Proof.
+  exists .
+Defined.
+
 Instance triv_ParTerm `{C : Category} `{T : @Terminal C}  : ParTerm .
 Proof.
   destruct T.
@@ -831,6 +848,8 @@ Proof.
   intros.
  exact (t_morph_unique _ (t_morph b ∘ f) (t_morph a ∘ id)).
 Defined.
+
+Check Has_pProducts.
 
 Instance triv_Prods `{C : Category} `{HP : @Has_Products C} : ∀ a b , ParProd a b.
 Proof.
@@ -848,22 +867,13 @@ Proof.
 Defined.
 
 (*
-Instance tParProdAreReal `{C : Category} `{ aCCC : @CCC  C} (a b : C) (aXb : ParProd a b) : Product a b.
-Proof.
-  destruct aCCC.
+Instance triv_Prod_are_prod `{C : Category} :  .
+intro HPC. exact (triv_Prods a b). Defined.
 
+Coercion triv_Prods  : Has_Products  >-> Has_pProducts.  _ triv_RC triv_RCat).
 
-
-Print triv_Prods.
-
-Coercion tParProdAreReal : ParProd >-> Product. 
+Has_Products C ->
 *)
-
-
-Instance triv_RCat `{C : Category} : RestrictionCat C triv_RC.
-Proof.
-  exists .
-Defined.
 
 (* Coercion triv_RCat_isCat : *)
 Instance triv_CRCat (C : Category)  (T : @Terminal C)  (HP : @Has_Products C) : CartRestrictionCat  triv_RC .
@@ -871,204 +881,27 @@ Proof.
   exists. exact triv_ParTerm. exact triv_Prods.
 Defined.
 
-(* Coercion triv_CRCat_isRCat : *)
-Definition TuringObjIn (C : Category) (rc : @RestrictionComb C) (RC : @RestrictionCat C rc) (CRC :  @CartRestrictionCat C rc RC )(a : CRC) : Prop := TuringObj a.
-
-
-(* If a CCC contains an object of which every other object is a retract, it is a Turing category with trivial restriction structure *) 
-
-(* NOTE
-
-This proof is not finished (but almost!). Below it are other propositions proofs of which are not completed yet.
-*)
-
-
-Theorem aTuringCCC `{C : Category} `{aCCC : @CCC C} : forall A : (triv_CRCat aCCC CCC_term CCC_HP), ((forall b : (triv_CRCat aCCC CCC_term CCC_HP), isRetractOf b A ) 
--> TuringObjIn C triv_RC (triv_RCat ) (triv_CRCat aCCC CCC_term CCC_HP) A).
-Proof.
-  intro.  intros retractH. unfold TuringObjIn. unfold TuringObj. intros.
-  destruct (triv_CRCat aCCC CCC_term CCC_HP). destruct triv_RCat. 
-  unfold triv_RC in RCat_RC0. unfold triv_rc in RCat_RC0.
-  destruct C. destruct aCCC. compute in CCC_HP; compute in CCC_HEXP. compute in RCat_RC0.
-  unfold rc in RCat_RC0. compute in RCat_RC0. 
-  destruct (CCC_HEXP A A) as [AtoA]. compute in AtoA.
-  simpl in eval. simpl in Exp_morph_ex. simpl in Exp_morph_com. simpl in Exp_morph_unique.
-  destruct (CCC_HP AtoA A) as [AtoAxA]. 
-  compute in aXx.  
-  destruct (retractH y) as [my]. destruct H as [ry].
-  destruct (retractH x) as [mx]. destruct H0 as [rx].
-  compute in RCat_HP0. compute in AtoAxA.
-  destruct (retractH AtoA) as [mAtoA].
-  destruct H1 as [rAtoA].
-  exists (ry ∘eval ∘(Prod_morph_ex aXx ( rAtoA ∘Pi_1p ) (mx ∘Pi_2p ) )).
-  
-  unfold TxyUniv. intros. unfold fAdmitsTxy. compute in f. compute. 
-  generalize dependent (Exp_morph_com z).   generalize dependent (Exp_morph_ex z).
-  destruct (CCC_HP z A) as [zXA]. compute. intro pmex. intro pmc. 
-  destruct zXx as [zXx].
-  exists (compose z AtoA A (pmex (compose _ _ _ (pProd_morph_ex0 _ Pi_0 (rx ∘Pi_3) ) (compose _ _ _ f my))) mAtoA).
-
-  destruct aXx as [AXx]. split; compute. auto. 
-  rewrite assoc. rewrite assoc.
-  replace ((compose zXx AXx AtoAxA
-        (pProd_morph_ex1 zXx
-           (compose zXx z A Pi_1p0
-              (compose z AtoA A
-                 (pmex
-                    (compose zXA zXx A
-                       (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx))
-                       (compose zXx y A f my))) mAtoA)) Pi_2p0)
-        (Prod_morph_ex AXx (compose AXx A AtoA Pi_1p1 rAtoA) (compose AXx x A Pi_2p1 mx))))  with 
-( (Prod_morph_ex _
-           (compose _ _ _(compose zXx z A Pi_1p0
-              (compose z AtoA A
-                 (pmex
-                    (compose zXA zXx A
-                       (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx))
-                       (compose zXx y A f my))) mAtoA)) rAtoA) (compose _ _ _ Pi_2p0 mx))).
-  rewrite <- assoc. rewrite <- assoc. rewrite <- assoc.
-  compute in H1. rewrite H1. rewrite id_unit_left.
-  rewrite id_unit_left in pmc.
-  rewrite assoc.
-  replace (compose zXx AtoAxA A
-     (Prod_morph_ex zXx
-        (compose zXx z AtoA Pi_1p0
-           (pmex (compose zXA zXx A (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx)) (compose zXx y A f my))))
-        (compose zXx x A Pi_2p0 mx)) eval)
-      with (compose _ _ _ ( Prod_morph_ex0 _ (Pi_1p0) (compose zXx x A Pi_2p0 mx) )  
-      (compose zXA AtoAxA A
-   (Prod_morph_ex zXA
-      (compose zXA z AtoA Pi_0
-         (pmex (compose zXA zXx A (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx)) (compose zXx y A f my))))
-      Pi_3) eval)).
- 
-  rewrite <- (pmc (compose zXA zXx A (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx))
-              (compose zXx y A f my))).
-  rewrite <- assoc. rewrite <- assoc. rewrite <- assoc.
-  compute in H. rewrite H. rewrite id_unit_left.
-  rewrite assoc.
-
-(*
-  rewrite pProd_morph_unique0.
-
-
-  rewrite ProdMapComp _ _ _ _ _ .
-  
-
-forall (a b c d : C), forall (aXb : ParProd a b), 
-    forall (f : Hom c a), forall (g : Hom c b), forall (h : Hom d c),
-   (pProd_morph_ex c f g) ∘h = pProd_morph_ex d (f ∘h) (g ∘h).
-
-(Prod_morph_ex AXx (compose AXx A AtoA Pi_1p1 rAtoA) (compose AXx x A Pi_2p1 mx))
-
-
-     (pProd_morph_ex1 _
-         (compose _ _ _  (Prod_morph_ex AXx (compose AXx A AtoA Pi_1p1 rAtoA) (compose AXx x A Pi_2p1 mx))
-            (compose zXx z A Pi_1p0
-              (compose z AtoA A
-                 (pmex
-                    (compose zXA zXx A
-                       (pProd_morph_ex0 _ Pi_0 (compose zXA A x Pi_3 rx))
-                       (compose zXx y A f my))) mAtoA))) 
-              (compose _ _ _ (Prod_morph_ex _ (compose AXx A AtoA Pi_1p1 rAtoA) (compose AXx x A Pi_2p1 mx)) 
-                            Pi_2p0)).
-        
-
-
-  rewrite (ProdMapComp _ _ _ _ _
-(pProd_morph_ex1 zXx
-           (compose zXx z A Pi_1p0
-              (compose z AtoA A
-                 (pmex
-                    (compose zXA zXx A
-                       (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx))
-                       (compose zXx y A f my))) mAtoA)) Pi_2p0)
-(Prod_morph_ex AXx (compose AXx A AtoA Pi_1p1 rAtoA) (compose AXx x A Pi_2p1 mx)) ).
-
-  rewrite <- assoc.  rewrite assoc.  rewrite assoc.   rewrite assoc.   rewrite assoc.
-  rewrite (pmc (compose zXA zXx A (pProd_morph_ex0 zXA Pi_0 (compose zXA A x Pi_3 rx))
-                 (compose zXx y A f my))). 
-  compute in pmc apply pmc.
-  assert (trRC : forall (a b : triv_RCat), forall (ab : Category.Hom a b), rc0 _ _ ab = id a).
-  compute.
-  rewrite rc_d0. rewrite rc_d0. 
-
-  assert (fzxa : forall (r : Hom zXA zXA), Hom (CCC_HP z A) zXA).
-   generalize dependent Exp_morph_com. destruct (CCC_HP z A). intros.
-compute in Exp_morph_ex.
-   compute.   
-  intro g.
-  generalize dependent (Exp_morph_com z).
-  compute in eval. simpl in Exp_morph_ex. simpl in Exp_morph_com. simpl in Exp_morph_unique.
-  destruct zXx as [zXx]. compute. intro. 
-  destruct aXx as [aXx]. compute. intro emc.
-  destruct (CCC_HP z A). 
-  intros. compute. 
-  generalize (Exp_morph_ex z (build_f _ _ z A x y f my rx)). generalize (Exp_morph_com z).
-  destruct zXx as [zXx]. intros. 
-
-sword fights.
-  assert (gg : Hom z AtoA). apply Exp_morph_ex. 
-  destruct (CCC_HP z A) as [zxA]. compute.
-  assert (mza : Hom (CCC_HP z A) A).
-  exists (rAtoA ∘(Exp_morph_ex z ())).
-
-  exists (Exp_morph_ex
-
-  destruct (retractH z) as [mz]. destruct H2 as [rz].
-
-  exists mz. split. generalize (mIsTotal _ _ mz rz H2). compute. auto.
-  compute in eval. simpl in Exp_morph_ex. simpl in Exp_morph_com. simpl in Exp_morph_unique.
-  rewrite Exp_morph_com
-
-  generalize  eval. compute. intro. Check eval.
- intro. simpl in eval.
-  destruct (CCC_HP AtoA A).
-  compute in A.
-  destruct triv_RCat. 
-
-*) Admitted. 
 
 
 
-(* These are some attempts to formalize further results about Turing categories,
-they also will not fully compile *)
-
-Definition Comp `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) : TuringCat rc A.
-exists . unfold TuringObj. intros. exists 
-
-Instance 
-
- :=
-forall (n : nat), forall (lf : list (Hom (nthProdC rc A n) A)), isAppStructForn A bullet n lf.
 
 
-Lemma equivDef `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-  `(CRC : @CartRestrictionCat C rc RC) (A : CRC) (bullet : Hom (RCat_HP A A) A) : ((forall X : CRC, isRetractOf X A) /\ (isAppStruct A bullet))
-   -> TuringCat rc A.
-Proof.
-  intro. destruct H. destruct CRC. destruct RC. destruct rc. unfold isAppStruct in H0. unfold isAppStructForn in H0.
-  unfold f_comp in H0. destruct RCat_term0. destruct (RCat_HP0 A A) as [AXA]. 
- 
-  assert (bullet' : Hom AXA A).
-  exists.
-  unfold TuringCat. simpl. unfold TxyUniv. unfold fAdmitsTxy. simpl. intros. unfold isRetractOf in H. 
-  unfold f_comp in H0. destruct RCat_term0. destruct (RCat_HP0 A A) as [AXA]. 
-  assert (Txy_1 : Hom A A). destruct C. simpl in H. elim (H (AXA)).
-   ∘(pProd_morph_ex0 A g (pt_morph0 A))
 
-generalize (H0 (S 0)). 
-  assert (ff : (Hom (nthProdC {| rc := rc0; rc1 := rc5; rc2 := rc6; rc3 := rc7; rc4 := rc8 |} A 1) A)). compute. destruct C.
-  
-compute. intro. in H0
-  destruct bullet.
- destruct (H0   
-r_y ∘(pProd_morph_ex AXA (Txy_1 ∘Pi_1p) Pi_2p) ∘(pProd_morph_ex aXx Pi_1p m_x)
+(* trivial idempotent in CRC - requires extensionality in CRC
+Definition idem_triv (C : Category) (rc : @RestrictionComb C) (RC : @RestrictionCat C rc) (CRC :  @CartRestrictionCat C rc RC ) 
+  (A : CRC) (e : Hom A A) := forall (f : Hom A A), (((e ∘ f = f) /\ (f = f ∘ e)) -> (f = e)). *)
 
-destruct RCat_HP0. compute in x; compute in y.
-simpl in H0.
- exists.
+(* complementary idempotents in CRC - requires unions/extensionality in the CRC 
+Definition complement_idem_ext (C : Category) (rc : @RestrictionComb C) (RC : @RestrictionCat C rc) (CRC :  @CartRestrictionCat C rc RC ) 
+  (A : CRC) (e e' : Hom A A) := (idem_triv CRC rc CRC CRC A (e ∘ e') ) /\ 
+      (forall (b : CRC) (f : Hom b A), (rc _ _ f) = (id b) -> 
+          (((rc _ _ (e ∘ p)) = (id ParTerm)) \/ ((rc _ _ e' ∘ p) = (id ParTerm)) ) ). *)
+
+
+
+
+
+
 
 (*
 
