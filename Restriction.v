@@ -16,6 +16,14 @@ Require Import Main_Category.
 Require Import CCC.
 Require Import Coq.Setoids.Setoid.
 
+
+Require Import Coq.Logic.EqdepFacts.
+Import EqNotations.
+Require Import Coq.Program.Equality.
+Require Export ProofIrrelevance.
+Require Export JMeq.
+Require Import Eqdep.
+
 Generalizable All Variables. 
 
 (*AXIOM proof irrelevance*)
@@ -31,6 +39,15 @@ Lemma idUniqueL `(C : Category) : forall (b : C), forall id1 : Hom b b,
     (forall a : C, forall f : Hom a b, id1 ∘f = f) -> id1 = id b.
 Proof.
   intros. destruct (H b (id b)). simpl. rewrite (id_unit_right b b id1). auto.
+Defined.
+
+(* exists-rewriting lemma *)
+Lemma exist_eq : forall (U:Type) (P:U -> Prop) (p q:U) (x:P p) (y:P q), p = q ->
+    exist P p x = exist P q y.
+Proof.
+  intros. apply eq_dep_eq_sig . generalize x. 
+  replace (∀ x0 : P p, eq_dep U P p x0 q y) with (∀ x0 : P q, eq_dep U P q x0 q y).
+  intros. rewrite (pf_ir (P q) x0 y). auto. rewrite H. auto.
 Defined.
 
 (* Type of a restriction combinator *)

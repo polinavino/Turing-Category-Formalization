@@ -102,6 +102,31 @@ Inductive converges_to : prf -> list nat -> nat -> Prop :=
 Lemma unique_conv : forall f ln y z, converges_to f ln y -> converges_to f ln z -> y=z.
 Admitted.
 
+Inductive converges_to_prim : prf -> list nat -> nat -> Prop :=
+  | conv_zero'' : forall (l : list nat), converges_to_prim Zero l 0
+  | conv_succ'' : converges_to_prim Succ nil (S 0) 
+  | conv_succ_nil'' : forall (l : list nat), forall x : nat, converges_to_prim Succ (cons x l) (S x) 
+  | conv_proj'' : forall (l : list nat), forall i : nat, ((blt_nat (length l) i) = false ) ->
+          (converges_to_prim (Proj i) l (zel i l))
+  | conv_sub'' : forall (l : list nat), forall (f g : prf), forall (n m x y : nat), converges_to_prim g l x ->
+    converges_to_prim f (pcombine n m l x) y ->
+       converges_to_prim (Sub f g n m) l y
+  | conv_pr_nil'' : forall (B s : prf), forall (x : nat), converges_to_prim B nil x -> converges_to_prim (Rec B s) nil x
+  | conv_pr_l'' : forall (l : list nat), forall (B s : prf), forall (x : nat), converges_to_prim B l x ->
+    converges_to_prim (Rec B s) (cons 0 l) x
+  | conv_pr'' : forall (l : list nat), forall (B s : prf), forall (x h r: nat), converges_to_prim (Rec B s) (cons h l) r ->
+       converges_to_prim s (cons h (cons r l)) x -> converges_to_prim (Rec B s) (cons (S h) l) x 
+.
+
+Lemma prim_total : forall f ln, exists y, converges_to_prim f ln y.
+intros. induction f. exists 0. econstructor.
+induction ln. exists (S 0). econstructor. exists (S a). econstructor.
+induction ln. induction n. generalize (conv_proj'' nil 0). intro.
+exists (zel 0 nil). apply H. compute. auto. Focus 3.
+destruct IHf1. destruct IHf2.
+generalize (conv_sub'' ln f1 f2 n n0 x0 x H0). intros.
+exists x. apply H1. induction ln. simpl. unfold pcombine. simpl.  H) .
+
 (* define the CRC of all maps of type N^n -> N^m *)
 Definition CompsNR := all_prod_maps_Rcat Par_Cat rc_Par Par_isRC Par_isCRC nat.  
 
@@ -589,16 +614,95 @@ exists 1. auto. auto.
 Defined.
 
 (* bullet defined as a map in the underlying category of all N^n -> N^m maps *)
-Definition bullet_CompN : @Hom Par_isCRC (@RCat_HP Par_isCRC rc_Par Par_isCRC Par_isCRC nat nat) nat.
-unfold Hom. unfold RCat_HP.
+Definition bullet_CompN_all : @Hom CompNCRC (@RCat_HP CompNCRC rc_CompN CompNCRC CompNCRC (proj1_sig N_obj) (proj1_sig N_obj)) (proj1_sig N_obj).
+unfold Hom.
+eexists; try auto. 
+eexists. Unshelve. Focus 2.
 simpl. unfold par_p_prod.
-eexists. Unshelve. Focus 2. intro.
-destruct H as [fs sn].
-exact (exists (y : nat) , converges_to  (nat_to_prf fs) (sn :: nil) y).
-simpl. intro. destruct x as [fs sn].
-intro. exact  (AC_select_y (sn :: nil) (nat_to_prf fs) H).
+ intro. destruct H as [[fs1 fs2] [sn1 sn2]].
+exact (exists (y : nat) , converges_to  (nat_to_prf fs1) (sn1 :: nil) y).
+intro. destruct x as [[fs1 fs2] [sn1 sn2]]. intro. simpl. exists.
+exact (AC_select_y (sn1 :: nil) (nat_to_prf fs1) H).
+exists. 
 Defined.
 
+
+Definition n_obj_rw : (proj1_sig N_obj) = (build_compsNR_obj 1).
+simpl. unfold build_compsNR_obj. simpl. apply exist_eq. auto. Defined.
+
+(*
+Definition n_obj_rw2 : p_prod (proj1_sig N_obj) (proj1_sig N_obj) (@RCat_HP CompNCRC rc_CompN CompNCRC CompNCRC (proj1_sig N_obj) (proj1_sig N_obj)) = (build_compsNR_obj 2).
+simpl. unfold build_compsNR_obj. simpl. apply exist_eq. auto.
+*)
+
+Definition bullet_CompN_all_n :  @Hom CompsNR (build_compsNR_obj 2) (build_compsNR_obj 1).
+unfold Hom.
+eexists; try auto. 
+eexists. Unshelve. Focus 2.
+simpl. unfold par_p_prod.
+ intro. destruct H as [fs1 [sn1 sn2]].
+exact (exists (y : nat) , converges_to  (nat_to_prf fs1) (sn1 :: nil) y).
+intro. simpl in x.
+ destruct x as [fs1  [sn1 sn2]]. intro. simpl. exists.
+exact (AC_select_y (sn1 :: nil) (nat_to_prf fs1) H).
+exists. 
+Defined.
+
+Lemma comps_bullet_n : conv_to_cat_prop 2 1 bullet_CompN_all_n.
+unfold conv_to_cat_prop. simpl. split.
+exists (Proj 1). unfold prf_par_map. apply par_eqv_def.
+simpl. split. intros. destruct z as [z1 [z2 zt]].  
+ split; intros. split. destruct H. simpl in H. 
+Focus 3. 
+
+ destruct z.
+
+Definition comps_bullet : Comp_mapsN _ _ bullet_CompN_all.
+unfold Comp_mapsN.
+induction (AC_select_Product
+     (proj1_sig (RCat_HP (proj1_sig N_obj) (proj1_sig N_obj)))
+     (proj2_sig (RCat_HP (proj1_sig N_obj) (proj1_sig N_obj)))).
+ rewrite <- n_obj_rw . simpl. unfold conv_to_cat_prop. 
+simpl. rewrite AnAm_Anm_pf.
+Admitted.
+
+(* bullet defined in Comp(N) *)
+Definition bullet_CompN : @Hom CRC_CompN (@RCat_HP CRC_CompN rcCompN CRC_CompN CRC_CompN N_obj N_obj) N_obj.
+exists bullet_CompN_all. 
+exact comps_bullet.
+Defined.
+
+Instance Turing_CompN : TuringCat rcCompN N_obj.
+exists. apply eq_charac. simpl.
+exists bullet_CompN. intro.
+eexists. Unshelve. Focus 3.
+unfold Hom. simpl. eexists; try auto.
+Unshelve. Focus 2. eexists; try auto. 
+eexists. intros. Unshelve. Focus 2. intro. exact True.
+destruct x. exists. destruct f.
+unfold Comp_mapsN in c. destruct (re_build_obj (proj1_sig N_obj)).
+simpl in c.
+assert (∃ n : nat,
+          par_p_prod (par_p_prod nat par_p_term) (par_p_prod nat par_p_term) =
+          nthProdC rc_Par nat n). exists 2. simpl.
+Focus 2. replace _ with H0 in c. replace _ with H0 in c.
+ replace par_p_prod with RCat_HP. 
+rewrite AnAm_Anm_pf. unfold par_p_prod.
+compute. rewrite AnAm_Anm_pf.
+forall pf,  (AC_select_Product (par_p_prod (par_p_prod nat par_p_term) (par_p_prod nat par_p_term)) pf) = 2).
+Focus 2.  rewrite H0 in c.
+ with 2 in c.
+rewrite re_build_obj in c. simpl in c. destruct x.
+destruct x. destruct c. compute in p.
+Definition x0 : nat * unit * (nat * unit).
+exists; exists; try exists.
+ simpl. unfold TuringObj.
+intros.
+
+
+∃ h : Hom N_obj N_obj,
+TotMaps rcCompN {|  |} N_obj N_obj h
+∧ f = bullet_CompN ∘ pProd_morph_ex (RCat_HP N_obj N_obj) (h ∘ Pi_1p) Pi_2p
 
 Fixpoint x_out (x : nat) : prf :=
 match x with 
@@ -627,7 +731,7 @@ auto. auto.
 Defined.
 *)
 
-
+(*
 Lemma Leibnitz_Kleene : forall A B : Par_Cat , forall f g : Hom A B, (projT1 f = projT1 g -> False ) -> HomParEqv A B f g -> 
 (projT1 f = projT1 g). intros a b f g. rewrite par_eqv_def.
 intros. rewrite H0.  unfold HomParEqv in H. inversion H.

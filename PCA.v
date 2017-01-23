@@ -432,7 +432,24 @@ Definition k_s_comb_comp_allP `{C : Category} `{rco : @RestrictionComb C} `{RC :
 Proof.
   unfold AppSysIsCombComp. unfold has_k_s. 
 
-Admitted. (*
+Admitted. 
+
+
+
+(* Initial PCA has k, s combinators only *)
+(*
+Definition  : Algebra_Cat
+*)
+
+
+
+
+
+
+
+
+
+(*
 compute.
   generalize dependent (RCat_HP A A).
  destruct (RCat_HP A A) as [AxA]. 

@@ -21,7 +21,6 @@ Require Import PCA.
 Require Import Coq.Lists.List.
 Require Import CompA.
 Require Import Main_Func.
-Require Import Par_Cat.
 
 Generalizable All Variables. 
 
@@ -290,6 +289,46 @@ Proof.
   rewrite pProd_morph_com_0. auto.
 Defined.
 
+
+Definition embedding_computable `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC) (bullet : Hom (RCat_HP A A) A) :
+exists (p_f : point rco A), exists m,
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ((proj1_sig p_f) ∘ (pt_morph A)) (id A))) ∘ m = id (RCat_HP A A)).
+
+Definition points_turing `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  : forall (bullet : Hom (RCat_HP A A) A) ,
+((forall a : CRC, @embedding_computable CRC a A bullet) /\
+((exists (h : Hom A A), (TotMaps rco CRC A A h) /\ 
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) (h ∘ Pi_1p) (Pi_2p))) = bullet)) /\ (forall (f : Hom A A),  (exists (p_f : point rco A), 
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ((proj1_sig p_f) ∘ (pt_morph A)) (id A))) = f))))
+  -> (CompMorph C rco RC CRC A bullet)).
+intros. unfold CompMorph. intros.
+destruct H. destruct H0.
+destruct H0. destruct H0.
+destruct (H (RCat_HP A A)) as [m].
+destruct H3 as [r]. 
+destruct (H1 ( f ∘ r ∘ bullet ∘ r)).
+exists x.  
+destruct CRC. destruct RC. destruct rco. destruct C. destruct RCat_RC.
+destruct RCat_HP. simpl. replace f with ((f ∘ r) ∘ m). rewrite <- H4. simpl.
+rewrite H2.
+rewrite H4.  rewrite <- H2.
+
+ rewrite H2. simpl in f. simpl in r. 
+eexists .  Focus 2. 
+
+exists (proj1_sig x ∘ pt_morph A). split.
+Focus 2.
+replace f with ((f ∘ r) ∘ m).
+rewrite <- H2. rewrite assoc.
+rewrite ProdMapComp.
+replace (pProd_morph_ex A (proj1_sig x ∘ pt_morph A) id ∘ m) with 
+(pProd_morph_ex (RCat_HP A A)
+    ((proj1_sig x ∘ pt_morph A) ∘ Pi_1p) Pi_2p).
+*)
+
+(exists (h : Hom A A), (TotMaps rco CRC A A h) /\ 
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) (h ∘ Pi_1p) (Pi_2p))) = bullet))
 
 (* The Halting set is m-complete *)
 Lemma halting_m_comp `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
@@ -869,7 +908,7 @@ destruct a as [aa aaa]; destruct b as [bb bbb]. destruct s as [ea eea].
 simpl in f; destruct f as [f ff]. apply f.
 Defined.
 
-*)
+
 Open Scope nat_scope.
 
 
@@ -894,6 +933,6 @@ Proof.
  exact (t_morph_unique _ (t_morph b ∘ f) (t_morph a ∘ id)).
 Defined.
 
-
+*)
 
 

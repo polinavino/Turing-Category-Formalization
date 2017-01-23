@@ -256,4 +256,4 @@ unfold open. unfold open_exist_f. unfold Op_par_leq.
 intros. destruct H as [exist_fA]. unfold TuringMorph in is_tur.
 unfold TxyUniv in is_tur. eexists. Unshelve. Focus 2.
 unfold Op. intro.
-destruct f_map.
+Admitted.
