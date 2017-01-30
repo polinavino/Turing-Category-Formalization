@@ -292,8 +292,9 @@ Defined.
 
 Definition embedding_computable `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC) (bullet : Hom (RCat_HP A A) A) :
-exists (p_f : point rco A), exists m,
-  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ((proj1_sig p_f) ∘ (pt_morph A)) (id A))) ∘ m = id (RCat_HP A A)).
+exists m, exists (p_r : point rco A),
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) ((proj1_sig p_f) ∘ (pt_morph (RCat_HP A A))) 
+    (bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ))) ∘ m = id (RCat_HP A A)).
 
 Definition points_turing `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  : forall (bullet : Hom (RCat_HP A A) A) ,

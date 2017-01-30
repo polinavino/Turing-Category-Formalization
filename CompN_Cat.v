@@ -23,6 +23,7 @@ Require Import Par_Cat.
 Require Import PeanoNat Even NAxioms.
 Require Import CompA.
 Require Import PCA.
+Require Import Range.
 
 
 (*AXIOM proof irrelevance*)
@@ -118,6 +119,7 @@ Inductive converges_to_prim : prf -> list nat -> nat -> Prop :=
        converges_to_prim s (cons h (cons r l)) x -> converges_to_prim (Rec B s) (cons (S h) l) x 
 .
 
+(*
 Lemma prim_total : forall f ln, exists y, converges_to_prim f ln y.
 intros. induction f. exists 0. econstructor.
 induction ln. exists (S 0). econstructor. exists (S a). econstructor.
@@ -126,6 +128,8 @@ exists (zel 0 nil). apply H. compute. auto. Focus 3.
 destruct IHf1. destruct IHf2.
 generalize (conv_sub'' ln f1 f2 n n0 x0 x H0). intros.
 exists x. apply H1. induction ln. simpl. unfold pcombine. simpl.  H) .
+*)
+
 
 (* define the CRC of all maps of type N^n -> N^m *)
 Definition CompsNR := all_prod_maps_Rcat Par_Cat rc_Par Par_isRC Par_isCRC nat.  
@@ -135,6 +139,8 @@ Definition CompNRC := (CompA_CRCat Par_Cat rc_Par Par_isRC Par_isCRC nat) .
 Definition rc_CompN := rcCompA Par_Cat rc_Par Par_isRC Par_isCRC nat : RestrictionComb CompsNR.
 
 Definition CompNCRC := CompA_CRCat Par_Cat rc_Par Par_isRC Par_isCRC nat .
+
+
 
 (* enumerate all prf's *)
 Definition enum_prf (f : prf) : nat. Admitted.
@@ -210,6 +216,14 @@ destruct a. simpl in H. simpl. rewrite H. unfold hom. eexists.
 Unshelve. Focus 2. intro. exact True. intro. simpl. intro. exact (fst x0).
 Defined.
 
+Definition pr1f (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m)):
+hom (proj1_sig (build_compsNR_obj n)) nat .
+simpl. simpl in f. destruct f. induction m.
+eexists. intros. exact 0.
+eexists. destruct x. intros. Unshelve. Focus 2.
+destruct x. exact x. Focus 2. destruct x. exact x.
+simpl in H. exact (fst (n0 x0 H)).
+Defined.
 
 Definition pr2Cf (a b : CompsNR) (f : hom (proj1_sig a) (proj1_sig b)) (n : nat) (H : proj1_sig b = nthProdC rc_Par nat (S n)) :
 @Hom CompsNR a (build_compsNR_obj n).
@@ -222,7 +236,9 @@ Defined.
 
 Definition into_term (n : nat) (f : Hom (build_compsNR_obj n) (build_compsNR_obj 0) ) : 
 @hom (proj1_sig (build_compsNR_obj n)) nat.
-unfold hom. destruct f. destruct x. exists x. intros. exact 0.
+unfold hom. destruct f. destruct x. exists x. intros.
+induction n. exact 0. simpl in x. simpl in x0. simpl in p.
+destruct x0. exact fst.
 Defined.
 
 (*
@@ -257,7 +273,12 @@ exact ((exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj n) =  ((pr1 
 (test_prop n m (pr2Cf (build_compsNR_obj n) (build_compsNR_obj (S m)) f m H) )) . Defined. 
 
 Fixpoint conv_to_cat_prop (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m))
-: Prop := (conv_to_cat_one n m f conv_to_cat_prop).
+: Prop := 
+match m with 
+ | 0 => (conv_to_cat_one n m f conv_to_cat_prop)
+ | S 0 => (exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj n) =  (pr1f n m f)) 
+ | S (S m') => (conv_to_cat_one n m f conv_to_cat_prop)
+end.
 
 Definition Comp_mapsN (a b : CompsNR) (f : @Hom CompsNR a b) : Prop.
 replace a with (build_compsNR_obj (AC_select_Product (proj1_sig a) (proj2_sig a))) in f.
@@ -440,6 +461,7 @@ Definition CompN : Category.
   apply (Wide_SubCategory CompsNR (Comp_mapsN ));
 intros. exact (id_comp_a a). exact (comp_comp_abc a b c f g H H0 ).
 Defined.
+
 
 
 Definition rc_in_CompN : forall (a b : CompN) (f : @Hom CompN a b), 
@@ -635,6 +657,7 @@ Definition n_obj_rw2 : p_prod (proj1_sig N_obj) (proj1_sig N_obj) (@RCat_HP Comp
 simpl. unfold build_compsNR_obj. simpl. apply exist_eq. auto.
 *)
 
+
 Definition bullet_CompN_all_n :  @Hom CompsNR (build_compsNR_obj 2) (build_compsNR_obj 1).
 unfold Hom.
 eexists; try auto. 
@@ -648,6 +671,7 @@ exact (AC_select_y (sn1 :: nil) (nat_to_prf fs1) H).
 exists. 
 Defined.
 
+(*
 Lemma comps_bullet_n : conv_to_cat_prop 2 1 bullet_CompN_all_n.
 unfold conv_to_cat_prop. simpl. split.
 exists (Proj 1). unfold prf_par_map. apply par_eqv_def.
@@ -656,14 +680,16 @@ simpl. split. intros. destruct z as [z1 [z2 zt]].
 Focus 3. 
 
  destruct z.
+*)
 
 Definition comps_bullet : Comp_mapsN _ _ bullet_CompN_all.
+(*
 unfold Comp_mapsN.
 induction (AC_select_Product
      (proj1_sig (RCat_HP (proj1_sig N_obj) (proj1_sig N_obj)))
      (proj2_sig (RCat_HP (proj1_sig N_obj) (proj1_sig N_obj)))).
  rewrite <- n_obj_rw . simpl. unfold conv_to_cat_prop. 
-simpl. rewrite AnAm_Anm_pf.
+simpl. rewrite AnAm_Anm_pf. *)
 Admitted.
 
 (* bullet defined in Comp(N) *)
@@ -671,6 +697,221 @@ Definition bullet_CompN : @Hom CRC_CompN (@RCat_HP CRC_CompN rcCompN CRC_CompN C
 exists bullet_CompN_all. 
 exact comps_bullet.
 Defined.
+
+(*
+Lemma compsRange : forall a b f, Comp_mapsN b b (@rrc CompNCRC rc_CompN CompNCRC CompNRangeComb a b f).
+Admitted.
+*)
+
+Definition rrc_in_CompN : @RangeComb CRC_CompN rcCompN CRC_CompN.
+eexists. Unshelve. Focus 5.
+eexists; try auto. Unshelve. Focus 2. destruct a as [a]. destruct b as [b]. destruct X as [X].  
+destruct a. destruct b. destruct X. simpl in x1.
+simpl. exists ( @rrc Par_isCRC rc_Par Par_isCRC rrc_Par _ _ x1); try auto. simpl.
+Admitted. (*
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g;
+apply exist_eq; simpl; try (  apply (@rrc1  Par_Cat rc_Par Par_isRC  rrc_Par)). 
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g.
+apply exist_eq. simpl.  apply (@rrc2  Par_Cat rc_Par Par_isRC  rrc_Par).
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g.
+apply exist_eq. simpl.  apply (@rrc3  Par_Cat rc_Par Par_isRC  rrc_Par).
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g.
+apply exist_eq. simpl.  apply (@rrc4  Par_Cat rc_Par Par_isRC  rrc_Par). *)
+
+Definition rrc_in_CompN_all : @RangeComb CompsNR rc_CompN CompsNR.
+eexists. Unshelve. Focus 5.
+eexists; try auto. destruct a as [a]. destruct b as [b]. destruct X as [X].
+simpl. simpl in X.  
+ exact ( @rrc Par_isCRC rc_Par Par_isCRC rrc_Par _ _ X); try auto. simpl.
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g;
+apply exist_eq; simpl; try (  apply (@rrc1  Par_Cat rc_Par Par_isRC  rrc_Par)). 
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g.
+apply exist_eq. simpl.  apply (@rrc2  Par_Cat rc_Par Par_isRC  rrc_Par).
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g.
+apply exist_eq. simpl.  apply (@rrc3  Par_Cat rc_Par Par_isRC  rrc_Par).
+intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl; simpl in f; try simpl in g.
+apply exist_eq. simpl.  apply (@rrc4  Par_Cat rc_Par Par_isRC  rrc_Par). 
+Defined.
+
+Definition Range_CompN : @RangeCat CRC_CompN rcCompN CRC_CompN rrc_in_CompN.
+exists. Defined.
+
+Definition build1 : CRC_CompN.
+exists (build_compsNR_obj 1). auto. Defined.
+
+Definition nat_in_comp (x: nat) : proj1_sig (build_compsNR_obj 1).
+simpl. exists; try exists. exact x. Defined.
+
+Lemma rewrite_list1 : forall (x:nat) (tt : par_p_term), 
+ (x :: nil) = (N_toProd (build_compsNR_obj 1) (x, tt)).
+Admitted.
+
+Lemma domain_compute : forall (f : Hom (build_compsNR_obj 1) (build_compsNR_obj 1)), forall (prf_f : prf) , 
+forall (pf :  prf_par_map prf_f (build_compsNR_obj 1) =  (pr1f 1 1 f)), forall (x : nat) ,
+ ((projT1 (proj1_sig (@rc CompNRC rc_CompN  _ _ f)) ) (nat_in_comp x)) <-> (exists y, converges_to prf_f (x :: nil) y).
+simpl. unfold nat_in_comp. unfold prf_par_map.
+simpl. intros. split. destruct f.
+destruct x0. simpl. intros. 
+unfold pr1f in pf. simpl in pf.
+apply par_eqv_def in pf. simpl in pf.
+destruct pf. destruct (H0 (x, tt)).
+replace (x :: nil) with (N_toProd (build_compsNR_obj 1) (x, tt)).
+exact (H3 H). rewrite (rewrite_list1 x tt). auto.
+intro. destruct f. destruct x0. simpl.
+unfold pr1f in pf. simpl in pf.
+apply par_eqv_def in pf. simpl in pf.
+destruct pf. destruct (H0 (x, tt)). apply H2.
+rewrite (rewrite_list1 x tt) in H. auto.
+Defined.
+
+
+Lemma domain_computable : forall (f : Hom (build_compsNR_obj 1) (build_compsNR_obj 1)), forall (prf_f : prf) , 
+forall (pf :  prf_par_map prf_f (build_compsNR_obj 1) =  (pr1f 1 1 f)), forall (x : nat) ,
+exists rc_prf, prf_par_map rc_prf (build_compsNR_obj 1) =  (pr1f 1 1 (@rc CompNRC rc_CompN  _ _ f)).
+simpl. intros. generalize (domain_compute f). intro dcf.
+destruct f. unfold prf_par_map. simpl. unfold prf_par_map in pf. 
+apply par_eqv_def in pf. simpl in pf. destruct pf.
+eexists. apply par_eqv_def. simpl. split.
+simpl.  intro. split. intro.
+Unshelve. Focus 4. 
+ generalize (H z).
+ ((projT1 (proj1_sig (@rc CompNRC rc_CompN  _ _ f)) ) (nat_in_comp x)) <-> (exists y, converges_to prf_f (x :: nil) y).
+
+Lemma range_compute : forall (f : Hom (build_compsNR_obj 1) (build_compsNR_obj 1)), forall (prf_f : prf) , 
+forall (pf :  prf_par_map prf_f (build_compsNR_obj 1) =  (pr1f 1 1 f)), forall (y : nat) ,
+ ((projT1 (proj1_sig (@rrc CompNRC rc_CompN CompNRC rrc_in_CompN_all  _ _ f)) ) (nat_in_comp y)) <-> 
+  (exists x, converges_to prf_f (x :: nil) y).
+simpl. unfold nat_in_comp. unfold prf_par_map.
+simpl. intros. split. destruct f.
+destruct x. simpl. intros. 
+unfold pr1f in pf. simpl in pf.
+apply par_eqv_def in pf. simpl in pf.
+destruct pf. destruct H. destruct H.
+destruct (H0 x0). generalize (H1 x0 (H3 x1) x1 (H3 x1)). intro.
+generalize dependent H3. 
+replace (N_toProd (build_compsNR_obj 1) x0) with ((fst x0 :: nil)) .
+intros. rewrite H in H4.
+exists (fst x0). simpl in H4. destruct (H3 x1).
+rewrite <- H4. apply AC_rewrite.
+rewrite (rewrite_list1 (fst x0) (snd x0)). simpl. auto.
+intros. destruct f. destruct x. simpl.
+unfold pr1f in pf. simpl in pf.
+apply par_eqv_def in pf. simpl in pf.
+destruct pf. destruct H.
+exists (x0, tt). destruct (H0 (x0, tt)).
+assert ((∃ y : nat, converges_to prf_f (N_toProd (build_compsNR_obj 1) (x0, tt)) y)).
+exists y. replace (N_toProd (build_compsNR_obj 1) (x0, tt)) with (x0 :: nil).
+auto. Focus 2.
+generalize (H1 (x0, tt) H4 (H2 H4) H4). intro. simpl in H5.
+exists (H2 H4). destruct (p (x0, tt) (H2 H4)) as [p1 p2].
+assert (p2 = tt). destruct p2. auto. rewrite H6. simpl in H5.
+rewrite <- H5. rewrite (unique_conv prf_f (x0 :: nil) y 
+ (AC_select_y (N_toProd (build_compsNR_obj 1) (x0, tt)) prf_f H4)).
+auto. auto. generalize dependent H4.
+replace (N_toProd (build_compsNR_obj 1) (x0, tt)) with (x0 :: nil).
+intros. exact  (AC_rewrite (x0 :: nil) prf_f H4).
+rewrite (rewrite_list1 x0 tt). auto.
+rewrite (rewrite_list1 x0 tt). auto.
+Defined.
+   
+
+Definition rrc_one_in_CompN (f : @Hom CompsNR (build_compsNR_obj 1) (build_compsNR_obj 1)) (pf : conv_to_cat_prop _ _ f) : 
+ { rf : @Hom CompsNR (build_compsNR_obj 1) (build_compsNR_obj 1) | conv_to_cat_prop _ _ rf}.
+eexists. Unshelve. Focus 2. eexists; try auto.
+eexists. Unshelve. Focus 2. intros.
+destruct f. destruct x.
+ exact (conv_to_cat_prop 1 1 f).
+simpl. intros. exists; try exists. 
+destruct f. destruct x0.
+
+ destruct x. eexists. 
+Unshelve. Focus 2. eexists; try auto. simpl.
+eexists. Unshelve. Focus 2. intro.
+simpl in pf. exact pf. simpl in x.
+exact (x H). intros. simpl in H. destruct pf.
+simpl in p. exact (p x0 H).
+simpl. split. destruct pf.
+ destruct e.
+unfold prf_par_map. simpl. eexists. apply par_eqv_def.
+simpl. 
+unfold prf_par_map in H. apply par_eqv_def in H.
+simpl in H. destruct H. exists. exact H. exact H0.
+unfold prf_par_map. eexists. apply par_eqv_def.
+simpl. split; intros. split; intros. destruct pf. 
+destruct e. destruct c. Unshelve. (*
+Focus 3. apply (unique_conv (Proj 1) (N_toProd (build_compsNR_obj 1) z)).
+apply AC_rewrite. generalize (conv_proj' (N_toProd (build_compsNR_obj 1) z) 1).
+simpl. destruct z as [z1 z2].
+ replace ( (N_toProd (build_compsNR_obj 1) (z1,z2))) with (z1 :: nil).
+assert (blt_nat (length (z1 :: nil)) 1 = false).
+unfold blt_nat. simpl. auto. simpl. intro. exact (H1 eq_refl).
+unfold N_toProd. simpl. 
+ econstructor. inversion e. *)
+apply par_eqv_def in e. simpl in H2. destruct H2.
+ destruct (H0 z ). unfold prf_par_map in  e0. 
+simpl in e0. apply par_eqv_def in e0. simpl in e0.
+destruct e0 as [e01 e02]. destruct (e01 z) as [e01z].
+destruct H4. split. try tauto.
+destruct (e02 z) as [e02z].
+destruct (e0 z). destruct (H3 H).
+generalize (H2 z
+inversion H1
+generalize (H1 H).
+inversion H2.
+apply H1.
+rewrite par_eqv_def in H
+destruct H
+Focus 2.
+Focus 3. exact H0.
+exists Sub Succ (x_out x') 0 0 x0. unfold prf_par_map. simpl.
+apply par_eqv_def. simpl. split.
+
+
+destruct pf. split.
+destruct ( (build_compsNR_obj 1)).
+
+Lemma dom_range_same (f : @Hom CompsNR (build_compsNR_obj 1) (build_compsNR_obj 1)) (pf : (conv_to_cat_prop 1 1 f)) : True.
+unfold conv_to_cat_prop in pf. destruct f. simpl in pf. 
+unfold prf_par_map in pf. simpl in pf. 
+destruct x. destruct pf. destruct H. destruct H0.
+apply par_eqv_def in H0. apply par_eqv_def in H.
+simpl in H0. simpl in H.
+simpl in H0.
+undestruct N_obj.
+destruct f. destruct x. destruct x0.
+simpl in x. simpl in x0. simpl in c.
+unfold Comp_mapsN in c. simpl in c. generalize dependent c.
+replace (AC_select_Product x e) with 1 in c.
+generalize dependent p. destruct N_obj.
+
+
+(proj1_sig (@rrc CompNCRC rc_CompN CompNCRC CompNRangeComb a b f)) =
+  (proj1_sig (@rc CompNCRC rc_CompN   a b f)).
+
+ intros; try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+simpl; simpl in f; try simpl in g;
+try apply exist_eq;
+try destruct f as [f]; try destruct g as [g]; 
+try destruct a as [a]; try destruct b as [b]; try destruct c as [c];
+try destruct f as [f]; try destruct g as [g]; simpl.
+destruct (rangeCompN _ _ _ ). apply exist_eq.
+apply par_eqv_def. unfold HomParEqv; simpl.
+destruct x. simpl. split. split. intro.
+  (exist (λ x : obj, ∃ n : nat, x = nthProdC rc_Par nat n) a e)
+  (exist (λ x : obj, ∃ n : nat, x = nthProdC rc_Par nat n) b e0)
+  (exist (λ _ : hom a b, True) f t1)).
+intros. destruct 
+
+
+
 
 Instance Turing_CompN : TuringCat rcCompN N_obj.
 exists. apply eq_charac. simpl.

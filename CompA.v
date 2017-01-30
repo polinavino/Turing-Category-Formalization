@@ -19,7 +19,6 @@ Require Import Coq.Setoids.Setoid.
 Require Import Restriction.
 Require Import PCA.
 Require Import Coq.Lists.List.
-Require Import Par_Cat.
 Require Import Main_Func.
 Require Import NatTrans Func_Cat Operations.
 
