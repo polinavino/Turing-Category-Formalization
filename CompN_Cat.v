@@ -101,7 +101,85 @@ Inductive converges_to : prf -> list nat -> nat -> Prop :=
         converges_to (Min f)  ln  (S (S x)).
 
 Lemma unique_conv : forall f ln y z, converges_to f ln y -> converges_to f ln z -> y=z.
+intros.
+induction H. try (inversion H0;  auto).
+try (inversion H0;  auto). try (inversion H0;  auto).
+try (inversion H0;  auto). 
+Focus 2. try (inversion H0;  auto). inversion H0.
+Focus 4. apply IHconverges_to. inversion H0. auto.
+rewrite H5. induction n. rewrite H5 in H3. auto.
 Admitted.
+(*
+inversion H0 contradiction.
+rewrite H5.  induction H0.
+auto.
+apply IHconverges_to2. inversion H0.
+inversion H. inversion H8;
+try (rewrite <- H10 in H13; inversion H13);
+try (rewrite <- H10 in H14; inversion H14);
+try (rewrite <- H10 in H15; inversion H15);
+try (rewrite <- H10 in H16; inversion H16);
+try (rewrite <- H10 in H17; inversion H17).
+rewrite <- H15 in H9. auto.
+inversion H0.
+
+elim H10.
+
+ inversion H9).
+
+rewrite <- H15 in H9; auto.
+rewrite <- H15 in H9.
+Focus 8. try (inversion H0;  auto).
+try (rewrite <- H1 in H4; inversion H4);
+try (rewrite <- H1 in H5; inversion H5);
+try (rewrite <- H1 in H6; inversion H6);
+try (rewrite <- H1 in H7; inversion H7);
+try (rewrite <- H1 in H8; inversion H8).
+try (rewrite <- H5 in H2; inversion H2).
+try (rewrite <- H5 in H2; inversion H2).
+
+rewrite <- H5
+inversion H9.
+Focus 15.
+rewrite (IHconverges_to4 H0). rewrite
+
+
+ inversion H2. rewrite H5. rewrite <- H6 in H2.
+inversion H2. apply IHconverges_to.
+
+ induction z. apply symmetry. auto. inversion H0. rewrite <- H5 in H9. auto.
+rewrite H10. apply IHconverges_to. inversion H0.
+rewrite <- H10 in IHconverges_to. rewrite <- H5 in IHconverges_to.
+induction n. exact (IHconverges_to H3).
+ inversion H0. auto.
+inversion H0. auto.
+
+
+
+
+ induction f. inversion H; inversion H0; try auto.
+induction ln. inversion H. inversion H0. auto.
+inversion H. inversion H0. auto.
+induction ln. inversion H. inversion H0. auto.
+inversion H. inversion H0. auto.
+induction ln. inversion H. inversion H0.
+Focus 4. induction ln. inversion H.
+rewrite <- H4 in IHf. apply IHf.
+ inversion H2. econstructor. simpl in H8.
+induction i. simpl. econstructor. simpl. auto.
+simpl. simpl in IHi. rewrite H8. intuition.
+assert (i=0). induction i. auto. inversion H8. rewrite H9. 
+econstructor. simpl. rewrite H9 in H5. simpl in H5.
+generalize (conv_proj' nil (S i)). simpl. intro. 
+apply conv_proj'. econstructor. simpl. inversion H8. destruct H. 
+destruct H.  destruct H0; try auto. apply IHf. simpl. econstructor.
+
+inversion H6. inversion H.
+induction ln. inversion H. inversion H0.
+compute in H8
+inversion H8. inversion H16. auto.
+inversion H16. rewrite <- H23 in H20.
+generalize H25. inversion H20. inversion H0. auto.
 
 Inductive converges_to_prim : prf -> list nat -> nat -> Prop :=
   | conv_zero'' : forall (l : list nat), converges_to_prim Zero l 0
@@ -117,7 +195,7 @@ Inductive converges_to_prim : prf -> list nat -> nat -> Prop :=
     converges_to_prim (Rec B s) (cons 0 l) x
   | conv_pr'' : forall (l : list nat), forall (B s : prf), forall (x h r: nat), converges_to_prim (Rec B s) (cons h l) r ->
        converges_to_prim s (cons h (cons r l)) x -> converges_to_prim (Rec B s) (cons (S h) l) x 
-.
+.*)
 
 (*
 Lemma prim_total : forall f ln, exists y, converges_to_prim f ln y.
@@ -260,13 +338,33 @@ exact ( (exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj n) =  ((pr1
 Defined.
 *)
 
+Definition conv_to_cat_zero
+  (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m))
+(test_prop : ∀ n m : nat, @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m) -> Prop) : Prop.
+ destruct n.  destruct f as [f]. simpl in f.
+ exact (exists prf_f : prf, projT1 (prf_par_map prf_f RCat_term) tt ↔ projT1 f tt).
+destruct m. exact True.
+assert (H : proj1_sig (build_compsNR_obj (S n)) = nthProdC rc_Par nat (S n)). simpl. auto.
+destruct f as [f]. 
+assert (H1 : proj1_sig (build_compsNR_obj (S m)) = nthProdC rc_Par nat (S m)). simpl. auto.
+exact  ((exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj (S n)) = 
+   ((pr1 (build_compsNR_obj (S n)) n H) ∘ (@rc _ rc_Par _ _ f)) ) /\
+(test_prop (S n) m (pr2Cf (build_compsNR_obj (S n)) (build_compsNR_obj (S m)) f m H1) )) .
+Defined. 
+
+Fixpoint conv_to_cat_zero_fix (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m))
+: Prop := 
+match m with 
+  | 0 => True
+  | S m' => (conv_to_cat_zero n m f conv_to_cat_zero_fix)
+end.
+
 
 Definition  conv_to_cat_one
   (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m))
 (test_prop : ∀ n m : nat, @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m) -> Prop) : Prop.
-destruct m. destruct n.
- simpl in f. destruct f. destruct x. exact (((x tt) = False) \/ ((x tt) = True)). 
-exact  (exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj (S n)) =  into_term (S n) f ).
+destruct m. 
+exact (conv_to_cat_zero_fix n n (@rc _ rc_CompN _ _ f)).
 destruct f as [f]. assert (H : proj1_sig (build_compsNR_obj (S m)) = nthProdC rc_Par nat (S m)).
 simpl. auto. 
 exact ((exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj n) =  ((pr1 (build_compsNR_obj (S m)) m H) ∘ f) )  /\
@@ -275,10 +373,61 @@ exact ((exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj n) =  ((pr1 
 Fixpoint conv_to_cat_prop (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m))
 : Prop := 
 match m with 
- | 0 => (conv_to_cat_one n m f conv_to_cat_prop)
+ | 0 => (conv_to_cat_zero_fix n n (@rc _ rc_CompN _ _ f))
  | S 0 => (exists (prf_f : prf) , prf_par_map prf_f (build_compsNR_obj n) =  (pr1f n m f)) 
  | S (S m') => (conv_to_cat_one n m f conv_to_cat_prop)
 end.
+
+
+Fixpoint x_out (x : nat) : prf :=
+match x with 
+  | 0 => Zero
+  | S x' => Sub Succ (x_out x') 0 0 
+end.
+
+
+Definition test_x_out : forall x ln, converges_to (x_out x) ln x.
+intros. compute. induction x. econstructor. 
+econstructor. 
+exact IHx. econstructor.
+Defined.
+
+Lemma points_comp : forall y , exists f, converges_to f nil y.
+intros. exists (x_out y).
+apply test_x_out.
+Defined. 
+
+Lemma undefined_point :
+exists f, forall y, converges_to f nil y -> False.
+eexists. intros. Unshelve. Focus 2. 
+exact (Min (x_out (S 0))).
+inversion H. inversion H1.
+simpl in H11. inversion H11.
+inversion H1. simpl in H12.
+ inversion H12.
+inversion H1. simpl in H13. inversion H13.
+inversion H1. simpl in H14. inversion H14.
+Defined.
+
+(*
+Lemma term_maps_prf : 
+forall (f : hom (proj1_sig (@p_term  CompNCRC rc_CompN CompNCRC (@RCat_term CompNCRC rc_CompN CompNCRC CompNCRC))) nat), 
+(((projT1 f) tt) (*\/ (((projT1 f) tt) -> False)*)) ->
+exists prf_f, prf_par_map prf_f (@RCat_term CompNCRC rc_CompN CompNCRC CompNCRC) =  f.
+intros. destruct f. unfold prf_par_map. eexists. rewrite <- par_eqv_def. unfold HomParEqv. 
+split; intros; try split; try intros. simpl in z. unfold par_p_term in z. 
+destruct z. simpl in H. auto. simpl in x. simpl in n. destruct z. simpl in H.
+ exists (n tt H). simpl.  replace ( N_toProd (CompAterm Par_Cat rc_Par Par_isRC Par_isCRC nat) tt) with (@nil nat).
+ Unshelve. Focus 4. simpl in H. exact (x_out (n tt H)). 
+apply test_x_out. Focus 2. destruct z. replace pf1 with H. Focus 2. apply pf_ir.
+
+apply (unique_conv (x_out (n tt H)) (N_toProd RCat_term tt)).
+assert (n z pf1 = n tt H). assert (z =tt). destruct z; auto. rewrite pf_ir. simpl in x.
+ unfold par_p_term in x. exists (x_out *)
+
+
+Definition prf_par_map (f : prf) (x : CompsNR) :
+  @hom (proj1_sig x) nat.
 
 Definition Comp_mapsN (a b : CompsNR) (f : @Hom CompsNR a b) : Prop.
 replace a with (build_compsNR_obj (AC_select_Product (proj1_sig a) (proj2_sig a))) in f.
@@ -772,7 +921,7 @@ destruct pf. destruct (H0 (x, tt)). apply H2.
 rewrite (rewrite_list1 x tt) in H. auto.
 Defined.
 
-
+(*
 Lemma domain_computable : forall (f : Hom (build_compsNR_obj 1) (build_compsNR_obj 1)), forall (prf_f : prf) , 
 forall (pf :  prf_par_map prf_f (build_compsNR_obj 1) =  (pr1f 1 1 f)), forall (x : nat) ,
 exists rc_prf, prf_par_map rc_prf (build_compsNR_obj 1) =  (pr1f 1 1 (@rc CompNRC rc_CompN  _ _ f)).
@@ -784,6 +933,8 @@ simpl.  intro. split. intro.
 Unshelve. Focus 4. 
  generalize (H z).
  ((projT1 (proj1_sig (@rc CompNRC rc_CompN  _ _ f)) ) (nat_in_comp x)) <-> (exists y, converges_to prf_f (x :: nil) y).
+*)
+
 
 Lemma range_compute : forall (f : Hom (build_compsNR_obj 1) (build_compsNR_obj 1)), forall (prf_f : prf) , 
 forall (pf :  prf_par_map prf_f (build_compsNR_obj 1) =  (pr1f 1 1 f)), forall (y : nat) ,
