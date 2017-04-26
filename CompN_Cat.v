@@ -319,11 +319,12 @@ Defined.
 
 (* True if a given f : N^n -> N^m is computable by a prf *)
 Fixpoint conv_to_cat_zero_fix (n m : nat) (f : @Hom CompsNR (build_compsNR_obj n) (build_compsNR_obj m))
-: Prop := 
+: Prop := (conv_to_cat_zero n m f conv_to_cat_zero_fix).
+(*
 match m with 
   | 0 => True
   | S m' => (conv_to_cat_zero n m f conv_to_cat_zero_fix)
-end.
+end.*)
 
 (* True if a given f : N^n -> 1 is computable by a prf *)
 Definition  conv_to_cat_one
