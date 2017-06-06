@@ -94,13 +94,6 @@ Instance RestrictionCatsAreCategories `{ RC: RestrictionCat  }  : Category := C.
 
 Coercion RestrictionCatsAreCategories : RestrictionCat >-> Category.
 
-(*
-Lemma idem_comp (C : Category) (rc : @RestrictionComb C) (RC : @RestrictionCat C rc) : forall
-  (a : RC) (e e' : Hom a a) (pe : e ∘ e = e) (pe' : e' ∘ e' = e'), (e ∘ e') ∘ (e ∘ e') = e ∘ e'.
-Proof.
-  intros. rewrite assoc. rewrite pe.
-*)
-
 (* restriction idempotents closed under composition *)
 Lemma r_idem_comp `{RC : RestrictionCat}
   (a : RC) (e e' : Hom a a) (pe : (rc a a e) = e) (pe' : (rc a a e') = e') : (rc a a (e ∘ e')) = e ∘ e'.
@@ -261,9 +254,6 @@ Coercion p_prod : ParProd >-> Obj.
 
 Definition Has_pProducts `{RC : RestrictionCat }  : Type := ∀ a b, ParProd a b.
 
-(*
-Definition Has_pProducts `(C : Category)  `(rc : @RestrictionComb C) `(RC : @RestrictionCat C rc) : Type := ∀ a b, ParProd a b.
-*)
 
 (* define total projection maps in a total subcategory of a cartesian restriciton category *)
 Definition Pi_1map `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}  : forall (a b : TotR rc RC), 
@@ -436,6 +426,7 @@ Definition point `{C : Category} `(rco : @RestrictionComb C) `{RC : @Restriction
   `{CRC : @CartRestrictionCat RC rco RC} (a : CRC) := { p : Hom (RCat_term) a | rc _ _ p = id _ }.
 
 (*AXIOM Kleene equality *)
+(* not used
 Definition Kl_eq `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}
   `{CRC : @CartRestrictionCat RC rc RC} (a b : CRC) (f g : Hom a b) := 
 (forall  (p : point rc a) , f ∘ (proj1_sig p) = g ∘ (proj1_sig p)) . 
@@ -443,7 +434,7 @@ Definition Kl_eq `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionC
 (* extensionality in CRCs *)
 Definition is_ext `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc}
   `{CRC : @CartRestrictionCat RC rc RC}  := forall (a b : CRC) (f g : Hom a b), ( Kl_eq rc a b f g <-> f = g ).
-
+*)
 
 (* in a CRC, X x 1 and 1 x X are isomorphic to X *)
 Lemma xX1and1XxIsox `(CRC : CartRestrictionCat ) : forall (x : C), forall ( ptrm : ParTerm  ), (forall (xX1 : ParProd x ptrm), 
@@ -692,7 +683,7 @@ Proof.
 Defined.
 
 
-
+(* define n-fold products in a CRC *)
  Record nth_ProdT `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
 :=  { npT : Type; npel:> npT; npobj : npT → CRC}.
 
@@ -717,6 +708,99 @@ end.
   | O => @pt_morph CRC rc CRC (@RCat_term CRC rc CRC CRC) B
   | S m => @pProd_morph_ex CRC rc CRC _ _ _ _ f (arrow_to_nthProd rc A B f m)
   end.
+
+Instance CCCsAreCategories `{C : Category} `{ aCCC : @CCC  C}  : Category := C.
+
+Coercion CCCsAreCategories : CCC >-> Category.
+
+(* Define trivial restriction and cartesian restriction categories with the id function as the restriction of every map *)
+Definition triv_rc `{C : Category} : rcType C.
+Proof.
+  unfold rcType. intros. exact (id a).
+Defined.
+
+Instance triv_RC `{C : Category} : RestrictionComb C.
+Proof.
+  exists triv_rc; intros; unfold triv_rc; destruct C; simpl.
+  apply id_unit_right. auto.  rewrite id_unit_right. auto.
+  rewrite id_unit_right. rewrite id_unit_left. auto. 
+Defined.
+
+
+Instance triv_RCat `{C : Category} : RestrictionCat C triv_RC.
+Proof.
+  exists .
+Defined.
+
+(* instantiante trivial partial terminal object *)
+Instance triv_ParTerm `{C : Category} `{T : @Terminal C}  : ParTerm .
+Proof.
+  destruct T.
+ exists terminal t_morph. 
+ intros; unfold triv_RC; simpl; unfold triv_rc. auto.
+ rewrite <- (t_morph_unique terminal id (t_morph terminal )). auto.
+  intros.
+ exact (t_morph_unique _ (t_morph b ∘ f) (t_morph a ∘ id)).
+Defined.
+
+(* instantiate trivial partial product *)
+Instance triv_Prods `{C : Category} `{HP : @Has_Products C} : ∀ a b , ParProd a b.
+Proof.
+  intros.
+  destruct (HP a b).
+ exists product Pi_1 Pi_2 Prod_morph_ex; intros; unfold triv_RC; simpl; unfold triv_rc.
+  auto. auto. rewrite id_unit_right. auto. 
+  rewrite Prod_morph_com_1. rewrite id_unit_right. auto.
+  rewrite Prod_morph_com_2. rewrite id_unit_right. auto.
+  rewrite (Prod_morph_unique _ r1 r2 (pm) ( Prod_morph_ex p' r1 r2)); auto; compute.
+  destruct C.
+  compute in H. rewrite id_unit_right in H. apply symmetry. auto.
+  destruct C.
+  compute in H0. rewrite id_unit_right in H0. apply symmetry. auto.
+Defined.
+
+
+
+(* define CRC with trivial restriction structure *)
+Instance triv_CRCat (C : Category)  (T : @Terminal C)  (HP : @Has_Products C) : CartRestrictionCat  triv_RC .
+Proof.
+  exists. exact triv_ParTerm. exact triv_Prods.
+Defined.
+
+Definition prod2TypeN `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
+(A : CRC) := Hom ( RCat_HP A (nthProdC rc A (S 0))) A .
+
+Definition prod2TypeHP `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
+`{CRC : @CartRestrictionCat C rc RC}  (A : CRC) := Hom ( RCat_HP A A) A .
+
+Definition projto_2ndA `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
+`{CRC : @CartRestrictionCat C rc RC} (A : Obj) (n : nat) : Hom (nthProdC rc A (S n))  A.
+Proof. 
+  destruct n; unfold nthProdC; simpl. exact (Pi_1p).
+   simpl. exact Pi_1p. 
+Defined.
+
+
+Definition proj_twice `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc}  `{CRC : @CartRestrictionCat C rc RC} ( A B D : Obj) : 
+Hom (RCat_HP A (RCat_HP B D)) D.
+Proof.
+  destruct (RCat_HP B D). simpl. destruct (RCat_HP A p_prod0). simpl. exact (Pi_2p0  ∘ Pi_2p1).
+Defined.
+
+Definition projto_restAs `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
+`{CRC : @CartRestrictionCat C rc RC} (A : RC) (n : nat) : Hom (RCat_HP A (nthProdC rc A (S n)))  (nthProdC rc A n).
+Proof. 
+  simpl. destruct n. simpl. exact (pt_morph _). exact (proj_twice A A  (nthProdC rc A (S n))).
+Defined.
+
+
+(* trial code 
+from here onwards *)
+
+
+(*
+
+*)
 
 (*
 (* A^n product in an cartesian restriction category *)
@@ -800,88 +884,12 @@ Instance nthProdisTerm `{ RC: RestrictionCat  }  : Category := C.
 
 Coercion nthProdisProd : CRC >-> ParProd. *)
 
-Definition prod2TypeN `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
-(A : CRC) := Hom ( RCat_HP A (nthProdC rc A (S 0))) A .
-
-Definition prod2TypeHP `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC}  (A : CRC) := Hom ( RCat_HP A A) A .
-
-Definition projto_2ndA `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : Obj) (n : nat) : Hom (nthProdC rc A (S n))  A.
-Proof. 
-  destruct n; unfold nthProdC; simpl. exact (Pi_1p).
-   simpl. exact Pi_1p. 
-Defined.
-
-
-Definition proj_twice `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc}  `{CRC : @CartRestrictionCat C rc RC} ( A B D : Obj) : 
-Hom (RCat_HP A (RCat_HP B D)) D.
-Proof.
-  destruct (RCat_HP B D). simpl. destruct (RCat_HP A p_prod0). simpl. exact (Pi_2p0  ∘ Pi_2p1).
-Defined.
-
-Definition projto_restAs `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : RC) (n : nat) : Hom (RCat_HP A (nthProdC rc A (S n)))  (nthProdC rc A n).
-Proof. 
-  simpl. destruct n. simpl. exact (pt_morph _). exact (proj_twice A A  (nthProdC rc A (S n))).
-Defined.
-
-
 (*
 Lemma mCoordDecomp `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
  (A : Obj) (n m : nat) (f : Hom (nthProdC rc A n) (nthProdC rc A m)) : exists (lf : list (Hom (nthProdC rc A n) A)), 
   (m = length lf) ->  f = (pProd_morph_ex_n A n lf).
 *)
 
-Instance CCCsAreCategories `{C : Category} `{ aCCC : @CCC  C}  : Category := C.
-
-Coercion CCCsAreCategories : CCC >-> Category.
-
-(* Define trivial restriction and cartesian restriction categories with the id function as the restriction of every map *)
-Definition triv_rc `{C : Category} : rcType C.
-Proof.
-  unfold rcType. intros. exact (id a).
-Defined.
-
-Instance triv_RC `{C : Category} : RestrictionComb C.
-Proof.
-  exists triv_rc; intros; unfold triv_rc; destruct C; simpl.
-  apply id_unit_right. auto.  rewrite id_unit_right. auto.
-  rewrite id_unit_right. rewrite id_unit_left. auto. 
-Defined.
-
-
-Instance triv_RCat `{C : Category} : RestrictionCat C triv_RC.
-Proof.
-  exists .
-Defined.
-
-Instance triv_ParTerm `{C : Category} `{T : @Terminal C}  : ParTerm .
-Proof.
-  destruct T.
- exists terminal t_morph. 
- intros; unfold triv_RC; simpl; unfold triv_rc. auto.
- rewrite <- (t_morph_unique terminal id (t_morph terminal )). auto.
-  intros.
- exact (t_morph_unique _ (t_morph b ∘ f) (t_morph a ∘ id)).
-Defined.
-
-Check Has_pProducts.
-
-Instance triv_Prods `{C : Category} `{HP : @Has_Products C} : ∀ a b , ParProd a b.
-Proof.
-  intros.
-  destruct (HP a b).
- exists product Pi_1 Pi_2 Prod_morph_ex; intros; unfold triv_RC; simpl; unfold triv_rc.
-  auto. auto. rewrite id_unit_right. auto. 
-  rewrite Prod_morph_com_1. rewrite id_unit_right. auto.
-  rewrite Prod_morph_com_2. rewrite id_unit_right. auto.
-  rewrite (Prod_morph_unique _ r1 r2 (pm) ( Prod_morph_ex p' r1 r2)); auto; compute.
-  destruct C.
-  compute in H. rewrite id_unit_right in H. apply symmetry. auto.
-  destruct C.
-  compute in H0. rewrite id_unit_right in H0. apply symmetry. auto.
-Defined.
 
 (*
 Instance triv_Prod_are_prod `{C : Category} :  .
@@ -891,18 +899,6 @@ Coercion triv_Prods  : Has_Products  >-> Has_pProducts.  _ triv_RC triv_RCat).
 
 Has_Products C ->
 *)
-
-(* Coercion triv_RCat_isCat : *)
-Instance triv_CRCat (C : Category)  (T : @Terminal C)  (HP : @Has_Products C) : CartRestrictionCat  triv_RC .
-Proof.
-  exists. exact triv_ParTerm. exact triv_Prods.
-Defined.
-
-
-
-
-
-
 
 (* trivial idempotent in CRC - requires extensionality in CRC
 Definition idem_triv (C : Category) (rc : @RestrictionComb C) (RC : @RestrictionCat C rc) (CRC :  @CartRestrictionCat C rc RC ) 

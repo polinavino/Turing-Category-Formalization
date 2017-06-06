@@ -29,18 +29,20 @@ Generalizable All Variables.
 (* define a category all_prod_maps_cat as a full subcategory of the underlying CRC 
 with objects 1, A, A^n, ... *)
 
+(* define predicate that is true when objects of a given CRC are in this subcategory *)
 Instance all_prod_maps_cat (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) : 
 Category := Full_SubCategory C (fun (x : CRC) => (exists (n : nat), x = (nthProdC rco A n))).
 
 
-(* objects in CRC that are A^n are equal *)
+(* objects in CRC that are of the form A^n are equal *)
 Definition same_n_obj (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) (a b : (all_prod_maps_cat C rco RC CRC A)) : Prop.
 destruct a as [a ap]; destruct b as [b bp]. 
 exact ((∃ n : nat, (a = nthProdC rco A n) /\ (b = nthProdC rco A n )) -> (a = b)) . 
 Defined.
 
+(* proof objects of the form A^n are equal *)
 Definition same_n_obj_pf (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) (a b : (all_prod_maps_cat C rco RC CRC A)) : 
 same_n_obj CRC rco CRC CRC A a b. 
@@ -68,26 +70,24 @@ unfold rcType. destruct a as [a]; destruct b as [b]. simpl.
 intro f; destruct f as [f]. exists (@rc RC rco a b f). auto. Defined.
 
 
-
-
+(* define the restriction combinator type class with rcCompAtype *)
 Definition rcCompA  (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC)  (A : CRC) :  RestrictionComb (all_prod_maps_cat C rco RC CRC A).
 exists (@rcCompAtype  C rco RC CRC A); intros; destruct a as [a]; try (destruct b as [b]);
 try (destruct c as [c]); destruct f as [f]; try (destruct g as [g]); unfold  rcCompAtype; simpl.
-(*destruct C; destruct RC; destruct CRC; destruct rco; simpl; apply pf_ir *)
 rewrite (@rc1 C rco). auto.
 rewrite (@rc2 C rco). auto.
 rewrite (@rc3 C rco). auto.
 rewrite (@rc4 C rco). auto.
 Defined.
 
-
+(* define the restriction category with combinator rcCompA *)
 Instance all_prod_maps_Rcat (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) :
 RestrictionCat (all_prod_maps_cat _ _ _ _ A) (rcCompA _ _ _ _ A).
 exists. Defined.
 
-
+(* define coercions *)
 Definition A1toAtype (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) := (Hom (nthProdC rco A 1) A).
 
@@ -145,8 +145,6 @@ unfold isAppStructFornProd. unfold isAppStructFornProd_test_m.
 induction m; unfold f_comp; simpl; intro H; destruct H as [p pf]; 
 destruct pf as [pf1 pf2]. exists p. rewrite assoc.
 unfold A11toA1map in pf1.
-
-
 
 Focus 2. simpl. induction m. simpl. split.
 unfold f_comp. simpl. exists p. split.
@@ -208,8 +206,8 @@ Axiom AnAm_Anm_pf : forall (C : Category) (rco : @RestrictionComb C) (RC : @Rest
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) (a b : (all_prod_maps_Rcat _ _ _ _ A)),
 AnAm_Anm _ _ _ _ A a b.
 
-(* define partial products - isomorphic to those in underlying category but defined by 
-adding the powers of A together *)
+(* define partial products in restriction category all_prod_maps_Rcat
+  with the following terms to build an instance of a ParProd type class *)
 Definition CompAprod (C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) 
   (CRC : @CartRestrictionCat C rco RC) (A : CRC) : forall (a b : (all_prod_maps_Rcat _ _ _ _ A)), (all_prod_maps_Rcat _ _ _ _ A).
 intros a b. 
@@ -345,7 +343,8 @@ exact (pProd_morph_unique_ComA _ _ _ _ _ a b).
 Defined.
 
 
-(* define partial terminal objects *)
+(* define the following terms to build the ParTerm type class
+  for the all_prod_maps_Rcat restriction category *)
 Definition CompAterm `(C : Category) `(rc : @RestrictionComb C) `(RC : @RestrictionCat C rc) 
   `(CRC : @CartRestrictionCat C rc RC) (A : CRC) :  (all_prod_maps_Rcat _ _ _ _ A).
 exists (nthProdC rc A 0).  simpl. exists 0. simpl. auto. 
@@ -394,21 +393,28 @@ exact (CompAid_ptm C rco RC CRC A ).
 exact (CompAunique_g C rco RC CRC A ).
 Defined.
 
-
+(* define an instance of a cartesian restriction category 
+   using the ParTerm and ParProd instances defined above *)
 Instance CompA_CRCat `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC) :  
 @CartRestrictionCat  (all_prod_maps_Rcat C rco RC CRC A) (rcCompA C rco RC CRC  A) (all_prod_maps_Rcat C rco RC CRC A).
 exists. exact (CompA_Term C rco RC CRC A). exact (CompA_Prods C rco RC CRC A).
 Defined.
 
+(* define terms to build SplitCompA *)
+
+(* type of the idempotent class predicate *)
 Definition idem_class `(C : Category) := forall (a : C) (e : Hom a a)  , Prop .
 
+(* objects in SplitCompA *)
 Definition split_obj `(C : Category) (E : idem_class C) := { a : C & {e : Hom a a | ((E a e) /\ (  e ∘ e = e )) } } .
 
+(* maps in SplitCompA *)
 Definition split_hom `(C : Category) (E : idem_class C) 
     := fun ( ce df : split_obj C E) => { f_ef : Hom (projT1 ce) (projT1 df) 
       | (proj1_sig (projT2 df)) ∘ f_ef = f_ef /\ f_ef = f_ef ∘ (proj1_sig (projT2 ce)) }.
 
+(* composition in SplitCompA *)
 Definition split_comp `(C : Category) (E : idem_class C) : forall ( ce df gh : split_obj C E) , 
     (split_hom C E ce df) ->  (split_hom C E df gh) ->  (split_hom C E ce gh).
 unfold split_hom. intros ce df gh f_ef g_ef. 
@@ -420,11 +426,13 @@ split. rewrite <- assoc. rewrite gef1. auto.
 rewrite assoc. rewrite <- fef2. auto.
 Defined.
 
+(* identity in SplitCompA *)
 Definition split_id `(C : Category) (E : idem_class C) : forall ( ce : split_obj C E) , 
     (split_hom C E ce ce).
 unfold split_hom. destruct ce as [a [cf [pfce pfcei] ] ].
 simpl. exists cf. auto. Defined.
 
+(* Category class proof obligations *)
 Definition  split_assoc `(C : Category) (E : idem_class C) : ∀ {a b c d : split_obj C E} (f : (split_hom C E a b))
  (g : (split_hom C E b c)) (h : (split_hom C E c d)),
             (split_comp _ _ _ _ _ f (split_comp _ _ _ _ _  g h) ) = (split_comp _ _ _ _ _  (split_comp _ _ _ _ _ f g) h).
@@ -444,7 +452,7 @@ Definition split_id_unit_right `(C : Category) (E : idem_class C) : ∀ {a b  : 
 Admitted.
 
 
-(* define SplitC as a restriction category *)
+(* define SplitC Category *)
 Definition SplitC `(C : Category) (E : idem_class C) : Category.
 exists (split_obj C E) (split_hom C E) (split_comp C E) (split_id C E).
 exact (@split_assoc _ _).
@@ -453,6 +461,7 @@ exact (@split_id_unit_left _ _).
 exact (@split_id_unit_right _ _).
 Defined.
 
+(* define restriction combinator mapping in SplitC *)
 Definition SplitRCtype `(C : Category) (E : idem_class C) 
 (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) : @rcType (SplitC C E).
 unfold rcType. intros ce df. 
@@ -468,7 +477,7 @@ rewrite pfcei. auto. rewrite <- assoc.
 rewrite fef1. rewrite assoc. rewrite pfcei.
 auto. Defined. 
 
-
+(* proof obligations for the RestictionComb type class in the SplitC category *)
 Definition sp_rc1  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (E : idem_class C) : ∀ (a b : split_obj C E) 
 (f : split_hom C E a b),
@@ -488,6 +497,7 @@ Definition sp_rc4  `(C : Category) (rco : @RestrictionComb C) (RC : @Restriction
 f_ef ∘ rc a c (gh ∘ (g_ef ∘ f_ef) ∘ cf) ∘ cf .
 Admitted.
 
+(* r3 proof *)
 Definition Split_rc  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (E : idem_class C) :  RestrictionComb (SplitC C E).
 exists (SplitRCtype C E rco RC); unfold split_hom;
@@ -523,11 +533,15 @@ Instance SplitRC `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCa
 (E : idem_class C) :  RestrictionCat (SplitC C E) (Split_rc C rco RC E).
 exists. Defined.
 
-(* class of idempotents closed under taking products Prop *)
+(* following terms are used to define partial products in SplitC *)
+
+(* the following predicate is true when a class of idempotents E is closed under 
+  taking partial products *)
 Definition E_closed_prod `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) := forall (a b : SplitRC C rco RC E),
 E (RCat_HP (projT1 a) (projT1 b)) (pProd_morph_ex _ ((proj1_sig (projT2 a)) ∘ Pi_1p) ((proj1_sig (projT2 b)) ∘ Pi_2p)).
 
+(* a partial product of two idempotents is also an idempotent *)
 Definition prod_map_idem `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) : forall a b, forall (ea : Hom a a), forall (eb : Hom b b),
 ea ∘ ea = ea -> eb ∘ eb = eb ->
@@ -552,6 +566,7 @@ rewrite <- (ProdMapComp CRC).
 rewrite rc1. auto. auto.
 Defined.
 
+(* partial product of two objects in SplitrC *)
 Definition Split_prod  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) : 
   forall (a b : SplitRC C rco RC E), SplitRC C rco RC E.
@@ -589,7 +604,7 @@ rewrite rc1. auto. auto.
 Defined.
  
 
-
+(* first projection *)
 Definition Split_Pi_1p  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) : 
 forall (a b : (SplitRC C rco RC E)), Hom ( Split_prod C rco RC CRC E pfe_cl a b) a.
@@ -622,7 +637,7 @@ rewrite rc_d. simpl in Pi_1Tot. rewrite Pi_1Tot. rewrite id_unit_left.
 auto. auto.
 Defined.
 
-
+(* second projection *)
 Definition Split_Pi_2p  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) : 
 forall (a b : (SplitRC C rco RC E)), Hom ( Split_prod C rco RC CRC E pfe_cl a b) b.
@@ -655,17 +670,20 @@ rewrite rc_d. simpl in Pi_2Tot. rewrite Pi_2Tot. rewrite id_unit_left.
 auto. auto.
 Defined.
 
+(* proof obligation pi1 is total *)
 Definition Split_Pi_1Tot  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) : forall (a b : (SplitRC C rco RC E)), 
 ((SplitRCtype C E rco RC)  _  a (Split_Pi_1p CRC rco CRC CRC _ pfe_cl a b)) = id _.
 Admitted.
 
+(* proof obligation pi2 is total *)
 Definition Split_Pi_2Tot  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) : 
 forall (a b : (SplitRC C rco RC E)), 
 ((SplitRCtype C E rco RC)  _ b (Split_Pi_2p CRC rco CRC CRC E pfe_cl a b)) = id _.
 Admitted.
 
+(* product map <f,g> *)
 Definition Split_pProd_morph_ex  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ): 
 forall (a b p : (SplitRC C rco RC E))
@@ -706,7 +724,7 @@ rewrite (ProdMapComp CRC).
 rewrite <- g2. rewrite <- f2. auto.
 Defined.
 
-
+(* proof obligations for ParProd instances in SplitRC *)
 Definition Split_pProd_morph_rest  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) : 
 forall (a b p : (SplitRC C rco RC E))
@@ -738,7 +756,7 @@ forall (a b p : (SplitRC C rco RC E))
              = ((SplitRCtype C E rco RC)  _ _  pm)) -> pm = (Split_pProd_morph_ex  C rco RC CRC E pfe_cl _ _ p r1 r2).
 Admitted.
 
-(* products in SplitRC *)
+(* partial products in SplitRC *)
 Definition Split_Prods  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) (CRC : @CartRestrictionCat C rco RC)
 (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E ) :  forall (a b : (SplitC C E)), 
 @ParProd (SplitRC C rco CRC E) (Split_rc C rco CRC E ) (SplitRC C rco CRC E ) a b.
@@ -754,7 +772,7 @@ exact (Split_pProd_morph_unique CRC rco CRC CRC E pfe_cl a b).
 Defined.
 
 
-(* define terminal object in Split_RC when E contains the id map on the terminal object *)
+(* restriction terminal object in SplitC *)
 Definition split_p_term `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) (CRC : @CartRestrictionCat C rco RC)
 (E : idem_class C) (Ehas_id : E RCat_term (id RCat_term)) : (SplitRC C rco CRC E ).
  unfold SplitRC. simpl. unfold split_obj.
@@ -764,6 +782,7 @@ rewrite <- id_is_ptm. rewrite id_unit_right. auto.
 Defined.
 
 
+(* total map from each object in SplitC into the restriction terminal object *)
 Definition split_pt_morph `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) (CRC : @CartRestrictionCat C rco RC)
 (E : idem_class C) (Ehas_id : E RCat_term (id RCat_term)) : 
 forall (a : (SplitRC C rco CRC E )), Hom a (split_p_term CRC rco CRC CRC E Ehas_id).
@@ -775,6 +794,7 @@ rewrite <- id_is_ptm. auto.
 rewrite assoc. destruct pa2 as [pa2 paa2]. rewrite paa2.
 auto. Defined.
 
+(* proof obligations for terminal object type class *)
 Definition split_morph_total `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) (CRC : @CartRestrictionCat C rco RC)
 (E : idem_class C) (Ehas_id : E RCat_term (id RCat_term)) : 
 forall (a : (SplitRC C rco CRC E )), (SplitRCtype C E rco RC) _ _ (split_pt_morph CRC rco CRC CRC E Ehas_id a) = id a.
@@ -792,7 +812,7 @@ forall (a b : (SplitRC C rco CRC E )) (f : Hom a b),
     (split_pt_morph CRC rco CRC CRC E Ehas_id a) ∘ ((SplitRCtype C E rco RC) _ _  f).
 Admitted.
 
-
+(* define an instance of ParTerm for a given SplitC *)
 Definition Split_Term  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco) (CRC : @CartRestrictionCat C rco RC)
 (E : idem_class C) (Ehas_id : E RCat_term (id RCat_term)):  
 @ParTerm (SplitRC C rco CRC E) (Split_rc C rco CRC E ) (SplitRC C rco CRC E ).
@@ -803,7 +823,8 @@ exact (split_pt_morph_unique_greatest CRC rco CRC CRC E Ehas_id ).
 Defined.
 
 
-(* instanciate SplitRC as a cartesian restriction category - when E closed under products *)
+(* instanciate SplitRC as a cartesian restriction category - when E closed under products 
+  and the E contains the identity map on the restriction terminal object *)
 Instance SplitCRC  `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (E : idem_class C) (pfe_cl : E_closed_prod C rco RC CRC E )
 (Ehas_id : E RCat_term (id RCat_term)) : 
@@ -813,6 +834,7 @@ exact (Split_Term CRC rco CRC CRC E Ehas_id ).
 exact (Split_Prods CRC rco CRC CRC E pfe_cl ).
  Defined.
 
+(* proof of closure of E under taking products when E is all idempotents *)
 Definition all_split `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) : idem_class CRC
 := fun (a : CRC ) (e : Hom a a) => True.
@@ -822,14 +844,14 @@ Definition asp `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat 
 E_closed_prod C rco RC CRC (all_split CRC rco CRC CRC  ).
 intros. unfold all_split. unfold E_closed_prod. intros. auto. Defined.
 
-
+(* proof of E containing the identity on the restriction terminal object 
+  when it contains all idempotents *)
 Definition h_id `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) : 
 (all_split C rco RC CRC ) RCat_term (id RCat_term) .
 unfold all_split.  auto. Defined.
 
-
-(* SplitCompA - without comb. compl. definition with all idempotents split *)
+(* SplitCompA cartesian restriciton category instance with class E split *)
 Definition SplitCompA_justCat_allIdem `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (A : CRC) := SplitCRC (CompA_CRCat CRC rco CRC CRC A)
 (rcCompA CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) 
@@ -839,6 +861,7 @@ Definition SplitCompA_justCat_allIdem `(C : Category) (rco : @RestrictionComb C)
 (rcCompA CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) ) (h_id (CompA_CRCat CRC rco CRC CRC A)
 (rcCompA CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) ) .
 
+(* SplitCompA cartesian restriction category instance with all idempotents split *)
 Definition E_SplitCompA_justCat `(C : Category) (rco : @RestrictionComb C) (RC : @RestrictionCat C rco)
 (CRC : @CartRestrictionCat C rco RC) (A : CRC) (E : idem_class (CompA_CRCat CRC rco CRC CRC A)) (pfe_cl : E_closed_prod _ _ _ _ E )
 (Ehas_id : E RCat_term (id RCat_term)) := SplitCRC (CompA_CRCat CRC rco CRC CRC A)

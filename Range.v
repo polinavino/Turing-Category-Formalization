@@ -79,6 +79,14 @@ Lemma composition_open `{RC : RestrictionCat} (a b c : RC) (f : Hom a b) (g : Ho
 Proof.
 Admitted.
 
+(* composition of open maps is open - specific exist_f version *)
+Lemma composition_open_mapex `{RC : RestrictionCat} (a b c : RC) (f : Hom a b) (g : Hom b c) 
+( exist_f : (Op a) -> (Op b)) ( exist_g : (Op b) -> (Op c))
+(pf : open_exist_f a b f exist_f) (pg : open_exist_f b c g exist_g) :  
+    open_exist_f a c (g ∘ f) (fun x =>  (exist_g (exist_f x))) .
+Proof.
+Admitted.
+
 
 (* Range Combinator definition *)
 Class RangeComb `{RC : RestrictionCat} : Type :=
@@ -176,9 +184,19 @@ Admitted.
 (* corresponds to (ii) in the lemma in thesis - do not require a range combinator for this  *)
 Lemma ranges_retr_open `{CRC : CartRestrictionCat} : forall ( x y : RC), forall (m : Hom x y), 
   forall (r : Hom y x), (r ∘m = id x) -> 
-(open  y x r) /\ (forall (e : Op y) (exist_f_mr : (Op y) -> (Op y)) (exist_f_r : (Op y) -> (Op x)), 
+(open  y x r) /\ (open _ _ (m ∘ r)) 
+/\ (forall (e : Op y) (exist_f_mr : (Op y) -> (Op y)) (exist_f_r : (Op y) -> (Op x)), 
     (open_exist_f _ _ r exist_f_r) -> (open_exist_f _ _ (m ∘ r) exist_f_mr) ->
       (proj1_sig (exist_f_r e) = proj1_sig (f_star _ _ m (exist_f_mr e))) ) .
+Admitted.
+
+(* corresponds to (ii) in the lemma in thesis - do not require a range combinator for this  *)
+Lemma ranges_retr_open_rc `{CRC : CartRestrictionCat} : forall ( x y : RC), forall (m : Hom x y), 
+  forall (r : Hom y x) (pfid : r ∘m = id x) (pfrc : rc _ _ (m ∘r) = (m ∘r)) , 
+(open _ _ m ) /\
+(forall (e : Op x) (exist_f_mr : (Op y) -> (Op y)) (exist_f_m : (Op x) -> (Op y)), 
+   (open_exist_f _ _ m exist_f_m) -> (open_exist_f _ _ (m ∘ r) exist_f_mr) ->
+    (proj1_sig (exist_f_m e) = proj1_sig (exist_f_mr (f_star _ _ r e)))   ).
 Admitted.
 
 Instance RangeCatIsRC `{ RRC: RangeCat  }  : RestrictionCat C RCat_RC  := RC.
@@ -194,22 +212,58 @@ Definition Beck_Chevalley `(C : Category) `(rco : @RestrictionComb C) `(RC : @Re
             pProd_morph_ex yXy' ((rrc _ _ f) ∘ Pi_1p ) ((rrc _ _ g) ∘ Pi_2p)).
 Defined. 
 
-
+(* given f, g, <f,g> satisfies BCC *)
 Definition sat_Beck_Chevalley `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) `(rrco : @RangeComb CRC rco CRC) `(RRC : @RangeCat CRC rco CRC rrco)
    : Type := ∀ x y x' y' f g , 
     Beck_Chevalley C rco RC CRC rrco RRC  x y x' y' f g.
 
+Definition Op_comp_pf `{CRC : CartRestrictionCat} 
+ ( x x' : CRC) (opx : Op x) (opx' : Op x') : 
+rc (RCat_HP x x') (RCat_HP x x') (pProd_morph_ex (RCat_HP x x') ((proj1_sig opx)∘ Pi_1p) ((proj1_sig opx')∘ Pi_2p)) =
+pProd_morph_ex (RCat_HP x x') ((proj1_sig opx)∘ Pi_1p) ((proj1_sig opx')∘ Pi_2p) .
+Admitted.
+
+Definition Op_comp `{CRC : CartRestrictionCat} 
+ ( x x' : CRC) (opx : Op x) (opx' : Op x') : Op (RCat_HP x x').
+unfold Op.
+exists (pProd_morph_ex (RCat_HP x x') ((proj1_sig opx)∘ Pi_1p) ((proj1_sig opx')∘ Pi_2p)).
+apply Op_comp_pf.
+Defined.
+
+(* id is open *)
+Definition id_open `{CRC : CartRestrictionCat} (a : CRC) : 
+open_exist_f a a (id a) (fun b => b).
+unfold open_exist_f. unfold Op_par_leq. unfold op_wedge.
+destruct CRC. destruct RC. destruct C. 
+simpl. unfold Op. destruct rc0. simpl. destruct RCat_RC. 
+split; intros. destruct e' as [ea erc']. simpl.
+Admitted.
+
+(* a -> 1 x a map is open *)
+Definition Ato1xAopen `{CRC : CartRestrictionCat} (a : CRC) : 
+open a (RCat_HP RCat_term a) (pProd_morph_ex a (pt_morph a) (id a)).
+unfold open_exist_f. unfold Op_par_leq. unfold op_wedge.
+destruct CRC. destruct RC. destruct C. 
+simpl. unfold Op. destruct rc0. simpl. destruct RCat_RC. 
+Admitted.
+
 (* Beck-Chevalley condition for range categories - open map version *)
 Definition Beck_Chevalley_open `{CRC : CartRestrictionCat} 
- ( x y x' y' : CRC) (f : Hom x y) ( g : Hom x' y' ) : Prop.
- destruct (RCat_HP y y') as [yXy']. destruct (RCat_HP x x') as [xXx']. 
-  exact (forall (exist1_f : (Op x) -> (Op y)) (exist1_g : (Op x') -> (Op y')) 
-            (exist1_fg : (Op xXx') -> (Op yXy')),  
-       (pProd_morph_ex yXy' ((proj1_sig (exist1_f (exist _ (id x) (@IdIsTotal C RCat_RC RC x )))) ∘ Pi_1p)
-      ((proj1_sig (exist1_g (exist _ (id x') (@IdIsTotal C RCat_RC RC x' )))) ∘ Pi_2p)) = 
-      (proj1_sig (exist1_fg  (exist _ (id xXx') (@IdIsTotal C RCat_RC RC xXx' ))  )  )).
-Defined.
+ ( x y x' y' : CRC) (f : Hom x y) ( g : Hom x' y' ) 
+   := open _ _ f -> open _ _ g -> 
+    open (RCat_HP x x') (RCat_HP y y') (pProd_morph_ex (RCat_HP x x') (f ∘ Pi_1p) (g ∘ Pi_2p)) /\
+  (forall (exist_f : Op x -> Op y) (exist_g : Op x' -> Op y')
+  (ex_f_op : open_exist_f x y f exist_f) (ex_g_op : open_exist_f x' y' g exist_g)  
+   (exist_fg : Op (RCat_HP x x') -> Op (RCat_HP y y')), forall (opfg : open_exist_f (RCat_HP x x') (RCat_HP y y') 
+    (pProd_morph_ex (RCat_HP x x') (f ∘ Pi_1p)
+      (g ∘ Pi_2p)) 
+        exist_fg) (opx : Op x) (opx' : Op x'),
+       ((pProd_morph_ex (RCat_HP y y') ((proj1_sig (exist_f opx)) ∘ Pi_1p)
+      ((proj1_sig (exist_g opx')) ∘ Pi_2p)) = 
+      (proj1_sig (exist_fg  (Op_comp x x' opx opx')  )  )) ).
+
+
 
 (* a range category with a restriction terminal object, restriction products, 
    and satisfying the BCC is a Cartesian range category *)
@@ -244,16 +298,143 @@ forall (x y : T), forall (f : Hom x y), forall (my : Hom y A), forall (ry : Hom 
 ry ∘ my = id y -> 
 ry ∘ bullet ∘ (pProd_morph_ex y (compose _ _ _ _ (pt_morph y) (proj1_sig r)) my) = rrc _ _ f.
 
+(*
+Definition make_point `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC) (p : Hom RCat_term A) 
+   (pt : TotMaps rco CRC RCat_term A p) : @point C rco RC CRC A.
+exists p. unfold TotMaps in pt.  destruct rco. destruct RC. destruct CRC.
+destruct C. simpl in pt.
+simpl. auto.
+Defined.
 
+Print make_point. *)
+
+(* identity map betweek Op a and Op a is open *)
+Definition OpId `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (b : CRC) : Op b.
+ unfold Op. exists id. exact (IdIsTotal b).
+Defined.
+
+
+(* sufficient conditions to define range combinator in a Turing category *)
 Definition bullet_points_open_range `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) `(A : CRC) `{ T : @TuringCat CRC rco CRC CRC A } 
-  (bullet : Hom (RCat_HP A A) A) (is_tur : @TuringMorph _ _ _ _ A T bullet) 
-  (bcc_op : forall x y x' y' f g, @Beck_Chevalley_open C RCat_RC RC CRC x y x' y' f g) : 
+  (bullet : Hom (RCat_HP A A) A) 
+  (index_col : forall (z:T) (f : Hom (RCat_HP z A) A), {h : Hom z A |
+     TotMaps rco CRC z A h
+     ∧ f =
+       bullet ∘ pProd_morph_ex (RCat_HP z A) (h ∘ Pi_1p) Pi_2p})
+  (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } ) 
+  (bcc_op : forall x y x' y' f g , @Beck_Chevalley_open C RCat_RC RC CRC x y x' y' f g ) : 
  (@open  CRC _ _ _ _ bullet)  ->  (forall (x y : CRC ) (m : Hom x y)  (r : Hom y x), (r ∘m = id x) -> rc _ _ (m ∘ r) = (m ∘ r) ) ->
   (forall (p :  @point CRC rco CRC CRC A), @open CRC _ _ _ _ (proj1_sig p)) ->
       forall a b f_map, (@open  CRC _ _ a b f_map).
-unfold open. unfold open_exist_f. unfold Op_par_leq.
-intros. destruct H as [exist_fA]. unfold TuringMorph in is_tur.
-unfold TxyUniv in is_tur. eexists. Unshelve. Focus 2.
-unfold Op. intro.
+unfold point. 
+unfold open. (* unfold open_exist_f. unfold Op_par_leq. *)
+intros. destruct H as [exist_fA].
+destruct (emb_col a) as [[ma ra] mra]. simpl in mra.
+destruct (emb_col b) as [[mb rb] mrb]. simpl in mrb.
+destruct (index_col RCat_term  (mb ∘ f_map ∘ ra ∘ (Pi_2p) )) as [h [toth bul_h]].
+unfold Op. unfold TotMaps in toth. destruct rco. simpl. destruct RC. simpl in toth.
+destruct (H1 (exist (λ p0 : Hom RCat_term A, rc RCat_term A p0 = id) h toth)) as [opmaph openh].
+generalize (bcc_op RCat_term A A A (h) (id A)). 
+unfold Beck_Chevalley_open. intro bcc1A. 
+assert (open RCat_term A h). unfold open.
+exists opmaph. exact openh.
+assert ( open A A id). unfold open. exists (fun a => a). exact (id_open A).
+destruct (bcc1A H2 H3) as [openhid bcchid]. destruct openhid as [hidhat openhid].
+simpl in H0.  
+destruct (ranges_retr_open_rc a A ma ra mra (H0 _ _ ma ra mra)) as [op_ra mra_pf].
+destruct (ranges_retr_open b A mb rb mrb) as [op_rb mrb_pf].
+destruct op_rb as [op_rb op_rb_pf]. destruct op_ra as [mra_op mra_eq]. 
+ destruct (Ato1xAopen A) as [ato1amap ato1apf].
+eexists. Unshelve. Focus 2. intro opa.
+exact (op_rb ( exist_fA (hidhat ( ato1amap (mra_op opa)) ) ) ).
+replace f_map with (rb ∘ (bullet  ∘ ((pProd_morph_ex (RCat_HP RCat_term A) (h ∘ Pi_1p) (id ∘ Pi_2p))
+  ∘ ((pProd_morph_ex A (pt_morph A) (id A)) ∘ ma)))).
+Print composition_open_mapex. 
+apply (composition_open_mapex a A b 
+       (bullet  ∘ ((pProd_morph_ex (RCat_HP RCat_term A) (h ∘ Pi_1p) (id ∘ Pi_2p))
+  ∘ ((pProd_morph_ex A (pt_morph A) (id A)) ∘ ma))) rb
+  (fun opa => (exist_fA (hidhat (ato1amap (mra_op opa))))) op_rb) ; try auto.  
+apply (composition_open_mapex a (RCat_HP A A) A 
+       ( ((pProd_morph_ex (RCat_HP RCat_term A) (h ∘ Pi_1p) (id ∘ Pi_2p))
+  ∘ ((pProd_morph_ex A (pt_morph A) (id A)) ∘ ma))) bullet
+  (fun opa => ( (hidhat (ato1amap (mra_op opa))))) exist_fA) ; try auto.  
+apply (composition_open_mapex a (RCat_HP RCat_term A) (RCat_HP A A)
+       ( ( ((pProd_morph_ex A (pt_morph A) (id A)) ∘ ma))) (pProd_morph_ex (RCat_HP RCat_term A) (h ∘ Pi_1p) (id ∘ Pi_2p))
+  (fun opa => ( ( (ato1amap (mra_op opa))))) hidhat) ; try auto. 
+apply (composition_open_mapex a A (RCat_HP RCat_term A)
+       ma (pProd_morph_ex A (pt_morph A) (id A)) 
+  (fun opa => ( ( ( (mra_op opa))))) ato1amap) ; try auto. 
+destruct (xX1and1XxIsox CRC A RCat_term ) as [Ax1is tXAiso].
+rewrite (ProdMapComp CRC). rewrite id_unit_left.
+ rewrite <- assoc. rewrite <- assoc. 
+rewrite <- assoc. rewrite <- (ProdMapComp CRC). apply symmetry.
+
+Check @pProd_morph_ex.
+   replace ( f_map ) with (
+ (rb ∘ (mb ∘ f_map ∘ ra ∘ 
+  Pi_2p) ∘ (@pProd_morph_ex CRC _ CRC (@p_term C _ CRC RCat_term ) A 
+   (RCat_HP (@p_term C _ CRC RCat_term ) A )
+   A (@pt_morph C _ CRC RCat_term A) (id A)) ∘ ma ) ).
+rewrite bul_h. rewrite assoc. rewrite assoc.
+rewrite (ProdMapComp CRC). rewrite <- assoc. rewrite <- assoc.
+rewrite <- assoc. rewrite <- (ProdMapComp CRC). rewrite assoc. auto.
+rewrite <- assoc. rewrite <- assoc. rewrite <-assoc. rewrite mrb.
+rewrite id_unit_left.
+replace (((f_map ∘ ra ∘ Pi_2p) ∘ (@pProd_morph_ex CRC _ CRC (@p_term C _ CRC RCat_term ) A 
+   (RCat_HP (@p_term C _ CRC RCat_term ) A ) A (pt_morph A) id)) ∘ ma) with
+(((f_map ∘ ra) ∘ (Pi_2p ∘ (@pProd_morph_ex CRC _ CRC (@p_term C _ CRC RCat_term ) A 
+   (RCat_HP (@p_term C _ CRC RCat_term ) A ) A (pt_morph A) id))) ∘ ma).
+destruct C. simpl. simpl in tXAiso.
+destruct (tXAiso (RCat_HP RCat_term A )). rewrite <- H5.
+rewrite id_unit_right. rewrite assoc. simpl in mra. rewrite mra.
+rewrite id_unit_right. auto.
+rewrite assoc. rewrite assoc. rewrite assoc. rewrite assoc. rewrite assoc. rewrite assoc. auto.
+Defined. 
+
+
+
+
+
+
+(* Trial Code *)
+
+(* existence of exist_fg *)
+Definition Beck_Chevalley_open_exists `{CRC : CartRestrictionCat} 
+ ( x y x' y' : CRC) (f : Hom x y) ( g : Hom x' y' )  := 
+forall (exist_f : Op x -> Op y) (exist_g : Op x' -> Op y') 
+  (ex_f_op : open_exist_f x y f exist_f) (ex_g_op : open_exist_f x' y' g exist_g), 
+  exists (exist_fg : Op (RCat_HP x x') -> Op (RCat_HP y y')), forall (opfg : open_exist_f (RCat_HP x x') (RCat_HP y y') 
+    (pProd_morph_ex (RCat_HP x x') (f ∘ Pi_1p)
+      (g ∘ Pi_2p)) 
+        exist_fg) (opx : Op x) (opx' : Op x'), 
+       ((pProd_morph_ex (RCat_HP y y') ((proj1_sig (exist_f opx)) ∘ Pi_1p)
+      ((proj1_sig (exist_g opx')) ∘ Pi_2p)) = 
+      (proj1_sig (exist_fg  (Op_comp x x' opx opx')  )  )).
+
+
+(* bcc implies range of product exists *)
+Definition bcc_open_imp_exists `{CRC : CartRestrictionCat} 
+ ( x y x' y' : CRC) (f : Hom x y) ( g : Hom x' y' ) 
+ : Beck_Chevalley_open x y x' y' f g  ->
+  Beck_Chevalley_open_exists x y x' y' f g .
+unfold Beck_Chevalley_open. unfold Beck_Chevalley_open_exists.
+simpl. intros. destruct CRC. simpl. 
+eexists. Unshelve. Focus 2. unfold Op. 
+intro. (*
+generalize (H exist_f0 exist_g ex_f_op ex_g_op). simpl.
+intro exfg.
+clear H. *) destruct X as [exx' rcxx'].
+eexists. Unshelve. Focus 2.
+destruct (RCat_HP x x') as [xXx']. simpl in exx'. simpl in rcxx'.
+(*
+exact (pProd_morph_ex (RCat_HP y y')
+         (proj1_sig (exist_f0 opx) ∘ Pi_1p)
+         (proj1_sig (exist_g opx') ∘ Pi_2p)).
+generalize ((Op_comp_pf _ _ (exist_f0 opx) (exist_g opx'))).
+ simpl. intro. auto.
+simpl. intro. auto.
+Defined. *)
 Admitted.

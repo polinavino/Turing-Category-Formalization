@@ -145,6 +145,56 @@ match m with
   | S m' => (isAppStructFornProd_test_m  A bullet n m f (isAppStructFornProd) )
 end.
 
+
+Definition isAppStructForn `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
+`{CRC : @CartRestrictionCat C rco RC} (A : CRC) (n m : nat) (bullet : Hom (RCat_HP A A) A) 
+ (f : Hom (nthProdC rco A n) (nthProdC rco A m))
+ := isAppStructFornProd A bullet n m f .
+
+
+
+
+(* True when applicative system (A, bullet) is combinatory complete *)
+Definition AppSysIsCombComp `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
+`{CRC : @CartRestrictionCat C rc RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) : Prop := 
+forall (n m : nat) (f : Hom (nthProdC rc A n) (nthProdC rc A m)),
+   isAppStructForn A n m bullet f.
+
+(* True when applicative system (A, bullet) has combinators k and s *)
+Definition has_k_s `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
+`{CRC : @CartRestrictionCat C rco RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) : Prop.
+ exact ( (exists (s : @point CRC rco CRC CRC A), forall (x y z : @point CRC rco CRC CRC A) ,
+  (compose _ _ _ _ 
+  (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
+    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
+    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig s) (proj1_sig x)) 
+  bullet) (proj1_sig y)) 
+  bullet)  (proj1_sig z))  
+      bullet ) = (compose _ _ _ _ (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
+    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig x) (proj1_sig z)) bullet ) (compose _ _ _ _ 
+    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig y) (proj1_sig z)) bullet ))  
+      bullet )) /\
+  (exists (k : @point CRC rco CRC CRC A), forall (x y : @point CRC rco CRC CRC A) ,
+  (compose _ _ _ _ (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
+    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig k) (proj1_sig x)) bullet ) (proj1_sig y))  
+      bullet ) = (proj1_sig x))).
+Defined.
+
+
+(* (A, bullet) is combinatory complete whenever it has combinators k and s *)
+Definition k_s_comb_comp_allP `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
+`{CRC : @CartRestrictionCat C rco RC}  (A : CRC) : forall (bullet : Hom (RCat_HP A A) A),
+   has_k_s A bullet <-> AppSysIsCombComp A bullet.
+Proof.
+  unfold AppSysIsCombComp. unfold has_k_s. 
+
+Admitted. 
+
+(* trial code from here onwards *)
+
+(* Initial PCA has k, s combinators only *)
+(*
+Definition  : Algebra_Cat
 (*
 Definition id_comp `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
 `{CRC : @CartRestrictionCat C rco RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) 
@@ -390,59 +440,6 @@ match m with
 
 *)
 
-Definition isAppStructForn `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
-`{CRC : @CartRestrictionCat C rco RC} (A : CRC) (n m : nat) (bullet : Hom (RCat_HP A A) A) 
- (f : Hom (nthProdC rco A n) (nthProdC rco A m))
- := isAppStructFornProd A bullet n m f .
-
-
-
-
-(* True when applicative system (A, bullet) is combinatory complete *)
-Definition AppSysIsCombComp `{C : Category} `{rc : @RestrictionComb C} `{RC : @RestrictionCat C rc} 
-`{CRC : @CartRestrictionCat C rc RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) : Prop := 
-forall (n m : nat) (f : Hom (nthProdC rc A n) (nthProdC rc A m)),
-   isAppStructForn A n m bullet f.
-
-(* True when applicative system (A, bullet) has combinators k and s *)
-Definition has_k_s `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
-`{CRC : @CartRestrictionCat C rco RC} (A : CRC) (bullet : Hom (RCat_HP A A) A) : Prop.
- exact ( (exists (s : @point CRC rco CRC CRC A), forall (x y z : @point CRC rco CRC CRC A) ,
-  (compose _ _ _ _ 
-  (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
-    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
-    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig s) (proj1_sig x)) 
-  bullet) (proj1_sig y)) 
-  bullet)  (proj1_sig z))  
-      bullet ) = (compose _ _ _ _ (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
-    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig x) (proj1_sig z)) bullet ) (compose _ _ _ _ 
-    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig y) (proj1_sig z)) bullet ))  
-      bullet )) /\
-  (exists (k : @point CRC rco CRC CRC A), forall (x y : @point CRC rco CRC CRC A) ,
-  (compose _ _ _ _ (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (compose _ _ _ _ 
-    (@pProd_morph_ex CRC rco CRC A A (RCat_HP A A) _ (proj1_sig k) (proj1_sig x)) bullet ) (proj1_sig y))  
-      bullet ) = (proj1_sig x))).
-Defined.
-
-
-(* (A, bullet) is combinatory complete whenever it has combinators k and s *)
-Definition k_s_comb_comp_allP `{C : Category} `{rco : @RestrictionComb C} `{RC : @RestrictionCat C rco} 
-`{CRC : @CartRestrictionCat C rco RC}  (A : CRC) : forall (bullet : Hom (RCat_HP A A) A),
-   has_k_s A bullet <-> AppSysIsCombComp A bullet.
-Proof.
-  unfold AppSysIsCombComp. unfold has_k_s. 
-
-Admitted. 
-
-
-
-(* Initial PCA has k, s combinators only *)
-(*
-Definition  : Algebra_Cat
-*)
-
-
-
 
 
 
@@ -477,6 +474,4 @@ simpl. destruct RCat_RC.
 compute. *)
 
 
-
-
-
+*)

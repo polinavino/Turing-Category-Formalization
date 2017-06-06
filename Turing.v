@@ -75,7 +75,6 @@ Instance TuringCatsAreCartRestCategories `(C : Category) `(rc : @RestrictionComb
 
 Coercion TuringCatsAreCartRestCategories : TuringCat >-> CartRestrictionCat.
 
-
 (* every object in a Turing category is a retract of a Turing object *)
 Lemma everyObjisRetract `{C : Category} `(rc : @RestrictionComb C) `{RC : @RestrictionCat C rc} `{CRC : @CartRestrictionCat C rc RC} 
   `(A : Obj) `{T : @TuringCat C rc RC CRC A} : forall x : C, isRetractOf x A.
@@ -290,47 +289,6 @@ Proof.
 Defined.
 
 
-Definition embedding_computable `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
-  `(CRC : @CartRestrictionCat C rco RC) (A : CRC) (bullet : Hom (RCat_HP A A) A) :
-exists m, exists (p_r : point rco A),
-  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) ((proj1_sig p_f) ∘ (pt_morph (RCat_HP A A))) 
-    (bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ))) ∘ m = id (RCat_HP A A)).
-
-Definition points_turing `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
-  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  : forall (bullet : Hom (RCat_HP A A) A) ,
-((forall a : CRC, @embedding_computable CRC a A bullet) /\
-((exists (h : Hom A A), (TotMaps rco CRC A A h) /\ 
-  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) (h ∘ Pi_1p) (Pi_2p))) = bullet)) /\ (forall (f : Hom A A),  (exists (p_f : point rco A), 
-  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ((proj1_sig p_f) ∘ (pt_morph A)) (id A))) = f))))
-  -> (CompMorph C rco RC CRC A bullet)).
-intros. unfold CompMorph. intros.
-destruct H. destruct H0.
-destruct H0. destruct H0.
-destruct (H (RCat_HP A A)) as [m].
-destruct H3 as [r]. 
-destruct (H1 ( f ∘ r ∘ bullet ∘ r)).
-exists x.  
-destruct CRC. destruct RC. destruct rco. destruct C. destruct RCat_RC.
-destruct RCat_HP. simpl. replace f with ((f ∘ r) ∘ m). rewrite <- H4. simpl.
-rewrite H2.
-rewrite H4.  rewrite <- H2.
-
- rewrite H2. simpl in f. simpl in r. 
-eexists .  Focus 2. 
-
-exists (proj1_sig x ∘ pt_morph A). split.
-Focus 2.
-replace f with ((f ∘ r) ∘ m).
-rewrite <- H2. rewrite assoc.
-rewrite ProdMapComp.
-replace (pProd_morph_ex A (proj1_sig x ∘ pt_morph A) id ∘ m) with 
-(pProd_morph_ex (RCat_HP A A)
-    ((proj1_sig x ∘ pt_morph A) ∘ Pi_1p) Pi_2p).
-*)
-
-(exists (h : Hom A A), (TotMaps rco CRC A A h) /\ 
-  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) (h ∘ Pi_1p) (Pi_2p))) = bullet))
-
 (* The Halting set is m-complete *)
 Lemma halting_m_comp `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) `(A : CRC) `{ T : @TuringCat C rco RC CRC A }  : 
@@ -449,13 +407,15 @@ Admitted.
 
 
 (* define the embedding of CompA into Turing Cat T *)
+
+(* define the embedding functor map on category objects *)
 Definition Comp_tur_o `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 :  @Obj (CompA_CRCat CRC rco CRC CRC A) ->   @Obj  T .
 unfold CompA_CRCat. simpl. intro. destruct X as [a]. exact a.
 Defined.
 
-
+(* define the embedding functor map on category maps *)
 Definition Comp_tur_m `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) :
 ∀ a b, @Hom (CompA_CRCat CRC rco CRC CRC A) a b -> @Hom T (Comp_tur_o _ _ _ _ _ _ a) (Comp_tur_o _ _ _ _ _ _ b) .
@@ -463,6 +423,7 @@ intros. unfold Comp_tur_o. simpl. destruct a as [a]. destruct b as [b]. destruct
 simpl in f. exact f.
 Defined.
 
+(* prove functoriality of mapping defined above *)
 Definition Comp_T_Emb_Func `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) : 
    Functor (CompA_CRCat CRC rco CRC CRC A) T.
@@ -473,6 +434,7 @@ destruct a as [a]. destruct b as [b]. destruct c as [c].
 simpl. auto.
 Defined.
 
+(* prove functor defined above is faithful *)
 Definition Comp_T_Emb_Faithful `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) : 
 Faithful_Func (Comp_T_Emb_Func _ rco _ _ _ _).
@@ -482,6 +444,7 @@ destruct h as [h]. destruct h' as [h']. simpl.
 rewrite H. apply pf_ir.
 Defined.
 
+(* prove functor defined above is full *)
 Definition Comp_T_Emb_Full `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) : Full_Func (Comp_T_Emb_Func _ rco _ _ _ _).
 unfold Full_Func. intros c c' h'.
@@ -490,12 +453,16 @@ simpl in h' . simpl.
 exists (exist (fun (x : Hom c c') => True) h' I ). auto.
 Defined.
 
+(* define an instance of an embedding using the functor Comp_T_Emb_Func and full/faithful proofs above *)
 Instance Comp_T_Embedding `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) : Embedding (CompA_CRCat CRC rco CRC CRC A) T.
 exists (Comp_T_Emb_Func _ rco _ _ _ _). exact (Comp_T_Emb_Faithful _ rco _ _ _ _).
 exact (Comp_T_Emb_Full _ rco _ _ _ _).
 Defined.
 
+(* Split(Comp(A)) embedding definition *)
+
+(* give Turing object in SplitCompA *)
 Definition TurSpCompA `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) : (CompA_CRCat CRC rco CRC CRC A) .
 unfold CompA_CRCat. simpl. exists (RCat_HP A RCat_term ). exists 1. simpl. auto.
@@ -505,7 +472,7 @@ Defined.
    can define and embedding of T into SplitCompA *)
 (* note that is has been proven earlier that such a collection EXISTS *)
 
-(* define the embedding of Turing cat T into SplitCompA *)
+(* define the functor mapping on objects of the category *)
 Definition Tur_spcompA_o `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
   (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } )
@@ -539,7 +506,7 @@ rewrite assoc. auto. auto.
 Unshelve. simpl. exists 1. simpl. auto. 
 Defined. 
 
-
+(* define the functor mapping on the maps in the category *)
 Definition Tur_spcompA_m `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
  (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } )
@@ -604,7 +571,7 @@ rewrite rc1. auto. rewrite assoc. rewrite assoc. rewrite assoc. rewrite assoc. r
  rewrite assoc. auto. auto.
 Defined.
 
-
+(* show functoriality of mapping defined above *)
 Definition Sp_Comp_T_Fuct_pfs  `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } ) : 
@@ -616,6 +583,7 @@ Tur_spcompA_m C rco RC CRC A T emb_col b c g
 ∘ Tur_spcompA_m C rco RC CRC A T emb_col a b f).
 Admitted.
 
+(* define functor using definitions and proof above *)
 Definition Sp_Comp_T_Fuct `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } ) : 
@@ -655,19 +623,21 @@ exact (Comp_T_Emb_Faithful _ rco _ _ _ _).
 exact (Comp_T_Emb_Full _ rco _ _ _ _).
 Defined. *)
 
-
+(* show faithful *)
 Definition Sp_Comp_T_Emb_Faithful `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } ) : 
 Faithful_Func (Sp_Comp_T_Fuct _ rco _ _ _ _ emb_col).
 Admitted.
 
+(* show full *)
 Definition Sp_Comp_T_Emb_Full `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } )
 : Full_Func (Sp_Comp_T_Fuct _ rco _ _ _ _ emb_col).
 Admitted.
 
+(* define embedding instance of T into SplitCompA *)
 Instance Sp_Comp_T_Embedding `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 (emb_col : forall x : T, { mrx : prod (Hom x A) ( Hom A x ) | ((snd mrx) ∘ (fst mrx)) = id x } ) :
@@ -801,7 +771,45 @@ rewrite id_unit_left. rewrite id_unit_right. rewrite assoc. auto. auto.
 Defined.
 
 
+
+
+
+
+
+
+
+
+
+
+(* Trial code / for future completion *)
 (*
+
+(* given a Turing category with Turing object A, 
+  it is a full (Turing) subcategory of the Turing Category splitCompA *)
+
+(* given a Turing category with Turing object A, 
+  CompA is a full (Turing) *)
+Definition compATuring  `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )  (E : idem_class (CompA_CRCat CRC rco CRC CRC A))
+  (pfe_cl : E_closed_prod _ _ _ _ E ) ( Ehas_id : E RCat_term (id RCat_term) )  (bullet : Hom (RCat_HP A A) A) :
+   @TuringCat C rco RC CRC A  -> @TuringCat CompA rcCompA CompA CompA (S 0).
+Proof.
+
+
+(* comp(A) is a Turing category for any PCA (A, bullet) *)
+Instance `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )  (E : idem_class (CompA_CRCat CRC rco CRC CRC A))
+  (pfe_cl : E_closed_prod _ _ _ _ E ) ( Ehas_id : E RCat_term (id RCat_term) )
+  split_comp_cat
+  :=  SplitCRC (CompA_CRCat CRC rco CRC CRC A) (rcCompA CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) 
+      E pfe_cl Ehas_id ;
+(SCA : (SplitCompACat CRC rco CRC CRC A)), @Obj  SCA -> 
+    @Obj T.
+intro. destruct SCA. simpl. unfold split_obj. intro a. 
+destruct a as [a]. simpl in a. destruct a as [a].  exact a.
+Defined.
+
+
 (* CompA is a cartesion restriction category which contains a PCA (A, bullet) and every
 other object is a retract of A *)
 Class CompACat `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
@@ -817,27 +825,6 @@ Class CompACat `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCa
 Coercion comp_cat : CompACat >-> CartRestrictionCat.
 
 
-(* given a Turing category with Turing object A, 
-  CompA is a full (Turing) *)
-(* comp(A) is a Turing category for any PCA (A, bullet) *)
-Definition compATuring  `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
-  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )  (E : idem_class (CompA_CRCat CRC rco CRC CRC A))
-  (pfe_cl : E_closed_prod _ _ _ _ E ) ( Ehas_id : E RCat_term (id RCat_term) )  (bullet : Hom (RCat_HP A A) A) :
-   @TuringCat C rco RC CRC A  -> @TuringCat CompA rcCompA CompA CompA (S 0).
-Proof.
-(* given a Turing category with Turing object A, 
-  it is a full (Turing) subcategory of the Turing Category splitCompA *)
-Instance `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
-  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )  (E : idem_class (CompA_CRCat CRC rco CRC CRC A))
-  (pfe_cl : E_closed_prod _ _ _ _ E ) ( Ehas_id : E RCat_term (id RCat_term) )
-  split_comp_cat
-  :=  SplitCRC (CompA_CRCat CRC rco CRC CRC A) (rcCompA CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) (CompA_CRCat CRC rco CRC CRC A) 
-      E pfe_cl Ehas_id ;
-(SCA : (SplitCompACat CRC rco CRC CRC A)), @Obj  SCA -> 
-    @Obj T.
-intro. destruct SCA. simpl. unfold split_obj. intro a. 
-destruct a as [a]. simpl in a. destruct a as [a].  exact a.
-Defined.
 
 (* the class of comb. complete CRCs of CompA with a class E of idempotents split *)
 Class SplitCompACat `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
@@ -857,25 +844,6 @@ Coercion split_comp_cat : SplitCompACat >-> CartRestrictionCat.
 
 
 
-Definition Fsp_tur_o `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
-  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )
-: forall (SCA : (SplitCompACat CRC rco CRC CRC A)), @Obj  SCA -> 
-    @Obj T.
-intro. destruct SCA. simpl. unfold split_obj. intro a. 
-destruct a as [a]. simpl in a. destruct a as [a].  exact a.
-Defined.
-
-
-Definition Fsp_tur_m `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
-  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
-: forall (SCA : (SplitCompACat CRC rco CRC CRC A)), 
-∀ a b, @Hom SCA a b -> @Hom T (Fsp_tur_o _ _ _ _ _ _ _ a) (Fsp_tur_o _ _ _ _ _ _ _ b).
-intros. destruct SCA. simpl. 
-destruct a as [a]; destruct b as [b]. 
-destruct X as [f]. simpl in f.
-destruct a as [aa aaa]; destruct b as [bb bbb]. destruct s as [ea eea].
-simpl in f; destruct f as [f ff]. apply f.
-Defined.
 
 Definition TotPar_Set_Cat_Eqv_b `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )
@@ -898,6 +866,20 @@ Definition CompA_Tur `(C : Category) `(rco : @RestrictionComb C) `(RC : @Restric
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC) : forall T : TuringCat rco A, 
 
 
+
+
+*)
+
+(*
+Definition Fsp_tur_o `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A )
+: forall (SCA : (SplitCompACat CRC rco CRC CRC A)), @Obj  SCA -> 
+    @Obj T.
+intro. destruct SCA. simpl. unfold split_obj. intro a. 
+destruct a as [a]. simpl in a. destruct a as [a].  exact a.
+Defined.
+
+
 Definition Fsp_tur_m `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
   `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
 : forall (SCA : (SplitCompACat CRC rco CRC CRC A)), 
@@ -908,6 +890,67 @@ destruct X as [f]. simpl in f.
 destruct a as [aa aaa]; destruct b as [bb bbb]. destruct s as [ea eea].
 simpl in f; destruct f as [f ff]. apply f.
 Defined.
+
+
+Definition Fsp_tur_m `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  ( T : TuringCat rco A ) 
+: forall (SCA : (SplitCompACat CRC rco CRC CRC A)), 
+∀ a b, @Hom SCA a b -> @Hom T (Fsp_tur_o _ _ _ _ _ _ _ a) (Fsp_tur_o _ _ _ _ _ _ _ b).
+intros. destruct SCA. simpl. 
+destruct a as [a]; destruct b as [b]. 
+destruct X as [f]. simpl in f.
+destruct a as [aa aaa]; destruct b as [bb bbb]. destruct s as [ea eea].
+simpl in f; destruct f as [f ff]. apply f.
+Defined.
+
+*)
+
+
+(* an embedding of an object into a Turing object is computable by bullet 
+Definition embedding_computable `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC) (bullet : Hom (RCat_HP A A) A) :
+exists m, exists (p_r : point rco A),
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) ((proj1_sig p_f) ∘ (pt_morph (RCat_HP A A))) 
+    (bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ))) ∘ m = id (RCat_HP A A)).
+
+
+Definition points_turing `(C : Category) `(rco : @RestrictionComb C) `(RC : @RestrictionCat C rco) 
+  `(CRC : @CartRestrictionCat C rco RC) (A : CRC)  : forall (bullet : Hom (RCat_HP A A) A) ,
+((forall a : CRC, @embedding_computable CRC a A bullet) /\
+((exists (h : Hom A A), (TotMaps rco CRC A A h) /\ 
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) (h ∘ Pi_1p) (Pi_2p))) = bullet)) /\ (forall (f : Hom A A),  (exists (p_f : point rco A), 
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ A ((proj1_sig p_f) ∘ (pt_morph A)) (id A))) = f))))
+  -> (CompMorph C rco RC CRC A bullet)).
+intros. unfold CompMorph. intros.
+destruct H. destruct H0.
+destruct H0. destruct H0.
+destruct (H (RCat_HP A A)) as [m].
+destruct H3 as [r]. 
+destruct (H1 ( f ∘ r ∘ bullet ∘ r)).
+exists x.  
+destruct CRC. destruct RC. destruct rco. destruct C. destruct RCat_RC.
+destruct RCat_HP. simpl. replace f with ((f ∘ r) ∘ m). rewrite <- H4. simpl.
+rewrite H2.
+rewrite H4.  rewrite <- H2.
+
+ rewrite H2. simpl in f. simpl in r. 
+eexists .  Focus 2. 
+
+exists (proj1_sig x ∘ pt_morph A). split.
+Focus 2.
+replace f with ((f ∘ r) ∘ m).
+rewrite <- H2. rewrite assoc.
+rewrite ProdMapComp.
+replace (pProd_morph_ex A (proj1_sig x ∘ pt_morph A) id ∘ m) with 
+(pProd_morph_ex (RCat_HP A A)
+    ((proj1_sig x ∘ pt_morph A) ∘ Pi_1p) Pi_2p).
+
+
+(exists (h : Hom A A), (TotMaps rco CRC A A h) /\ 
+  ((bullet ∘ (@pProd_morph_ex CRC rco CRC  _ _ _ (RCat_HP A A) (h ∘ Pi_1p) (Pi_2p))) = bullet)) *)
+
+
+(*
 
 
 Open Scope nat_scope.
@@ -934,6 +977,5 @@ Proof.
  exact (t_morph_unique _ (t_morph b ∘ f) (t_morph a ∘ id)).
 Defined.
 
+
 *)
-
-

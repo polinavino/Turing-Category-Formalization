@@ -244,6 +244,7 @@ Inductive empty_set : Set := .
 Inductive unit : Set :=
     tt : unit.
 
+(* define the terms and proofs needed to instantiate the terminal object in Par *)
 Definition  par_p_term : Par_isRC := unit.
 Definition  par_pt_morph : ∀ (a : Par_isRC), Hom a par_p_term.
   intros. compute. destruct Par_isRC. 
@@ -276,6 +277,7 @@ Definition  par_pt_morph_unique_greatest : pmug_prop.
   destruct pf. destruct pf1. auto.
 Defined.
 
+(* define the terms and proofs needed to instantiate the partial products in Par *)
 Definition  par_p_prod (a b : Par_isRC) : Par_isRC .
   compute. compute in a. compute in b. exact (a * b).
 Defined.
@@ -374,11 +376,13 @@ Definition  par_pProd_morph_unique (a b : Par_isRC) : par_pProd_morph_unique_pro
   destruct (p z pf). intros. rewrite H3. rewrite H6. auto.
 Defined.
 
+(* instantiate terminal object in Par *)
 Definition PPTerm : @ParTerm Par_isRC rc_Par Par_isRC.
   exists par_p_term par_pt_morph.
   exact par_morph_total. exact par_id_is_ptm. exact par_pt_morph_unique_greatest.
 Defined.
 
+(* instantiate partial products in Par *)
 Definition PPProds : @Has_pProducts Par_isRC rc_Par Par_isRC.
   compute. intros. exists (par_p_prod a b) (par_Pi_1p a b)  (par_Pi_2p a b) (par_pProd_morph_ex a b).
   exact (par_Pi_1Tot a b). exact (par_Pi_2Tot a b).
@@ -428,6 +432,7 @@ Proof.
   compute in t; compute in t0. eauto. 
 Defined.
 
+(* lemma for rewriting of terms of type exist P p x *)
 Lemma exist_eq : forall (U:Type) (P:U -> Prop) (p q:U) (x:P p) (y:P q), p = q ->
     exist P p x = exist P q y.
 Proof.
@@ -503,13 +508,15 @@ Defined.
 
 
 (* show that composing the above functors Tot(Par) -> Set -> Tot(Par) gives the identity functor on Tot(Par)
-  by showing it's equal to the identity func on objects and maps *)
+  by showing it's equal to the identity func on objects *)
 Lemma TotPar_Set_Cat_Eqv_o : forall a ,
  @FO (Tot rc_Par Par_isRC) (Tot rc_Par Par_isRC)
   (Functor_compose  TotPar_Set_Cat_Eqv_b TotPar_Set_Cat_Eqv_f) a = @FO (Tot rc_Par Par_isRC) (Tot rc_Par Par_isRC) (Functor_id _) a.
 compute. intros. destruct a.  auto.
 Defined.
 
+(* show that composing the above functors Tot(Par) -> Set -> Tot(Par) gives the identity functor on Tot(Par)
+  by showing it's equal to the identity func on maps *)
 Definition TotPar_Set_Cat_Eqv_m (a b : (Tot rc_Par Par_isRC)) (f : @Hom  (Tot rc_Par Par_isRC) a b) (x : (proj1_sig a)) :
  (@FA (Tot rc_Par Par_isRC) (Tot rc_Par Par_isRC) (Functor_id _) _ _ f = 
     (@FA (Tot rc_Par Par_isRC) (Tot rc_Par Par_isRC) (Functor_compose  TotPar_Set_Cat_Eqv_b TotPar_Set_Cat_Eqv_f) _ _ f)).
@@ -522,13 +529,15 @@ intros. rewrite (pf_ir (pf z) pf0 pff). auto. apply H0.
 Defined.
 
 (* show that composing the above functors Set -> Tot(Par) -> Set gives the identity functor on Set 
-    by showing it's equal to the identity func on objects and maps *)
+    by showing it's equal to the identity func on objects *)
 Lemma Set_TotPar_Cat_Eqv_o : forall a ,
  @FO Set_Cat Set_Cat
   (Functor_compose  TotPar_Set_Cat_Eqv_f TotPar_Set_Cat_Eqv_b) a = @FO Set_Cat Set_Cat (Functor_id _) a.
 compute.  auto.
 Defined.
 
+(* show that composing the above functors Set -> Tot(Par) -> Set gives the identity functor on Set 
+    by showing it's equal to the identity func on maps *)
 Definition Set_TotPar_Cat_Eqv_m (a b : Set_Cat) (f : @Hom Set_Cat a b) (x : a) :
  (@FA Set_Cat Set_Cat (Functor_id _) _ _ f = 
     (@FA Set_Cat Set_Cat (Functor_compose  TotPar_Set_Cat_Eqv_f TotPar_Set_Cat_Eqv_b ) _ _ f)).
@@ -536,13 +545,14 @@ compute. apply functional_extensionality. intro. auto.
 Defined.
 
 
-(* define the range combinator in a cartesian restriction category *)
+(* define the range combinator mapping in a cartesian restriction category *)
 Definition rrc : rrcType Par_isRC.
   unfold rrcType. intros. destruct X as [fp f]. compute.
   exists (fun (y : b) => (exists x : a, exists p : (fp x), f x p = y)).
   intros. exact x.
 Defined.
 
+(* define an instance of the RangeComp type class for Par_isCRC *)
 Definition rrc_Par :  @RangeComb Par_isCRC rc_Par Par_isCRC.
   exists rrc; intros; destruct f; apply par_eqv_def; try destruct g;  compute  ;
   try split; try intros; try split; 
@@ -580,10 +590,11 @@ Definition rrc_Par :  @RangeComb Par_isCRC rc_Par Par_isCRC.
   rewrite (pf_ir _ (x4 e) (x3 x2)). auto. 
 Defined.
 
-
+(* define an instance of Par as a range category *)
 Definition Par_isRangeC : RangeCat Par_isCRC rc_Par Par_isCRC rrc_Par.
 exists. Defined.
 
+(* prove the Beck Chevalley condition in Par *)
 Definition Par_BCC : @sat_Beck_Chevalley Par_isCRC rc_Par Par_isCRC Par_isCRC rrc_Par Par_isRangeC .
 unfold sat_Beck_Chevalley. 
 unfold Beck_Chevalley. intros.
@@ -612,6 +623,7 @@ destruct z as [z1 z2]. destruct H. destruct pf1.
 destruct a. destruct a0. compute. auto. 
 Defined.
 
+(* define an instance of Par as a cartesian range category *)
 Instance Par_isCRRC : CartRangeCat Par_isCRC rc_Par Par_isCRC Par_isCRC rrc_Par Par_isRangeC.
 exists.
 exact Par_BCC.
