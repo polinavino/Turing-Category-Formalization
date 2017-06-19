@@ -1,0 +1,182 @@
+\documentclass{entcs} \usepackage{entcsmacro}
+\usepackage{graphicx}
+\sloppy
+% The following is enclosed to allow easy detection of differences in
+% ascii coding.
+% Upper-case    A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+% Lower-case    a b c d e f g h i j k l m n o p q r s t u v w x y z
+% Digits        0 1 2 3 4 5 6 7 8 9
+% Exclamation   !           Double quote "          Hash (number) #
+% Dollar        $           Percent      %          Ampersand     &
+% Acute accent  '           Left paren   (          Right paren   )
+% Asterisk      *           Plus         +          Comma         ,
+% Minus         -           Point        .          Solidus       /
+% Colon         :           Semicolon    ;          Less than     <
+% Equals        =3D           Greater than >          Question mark ?
+% At            @           Left bracket [          Backslash     \
+% Right bracket ]           Circumflex   ^          Underscore    _
+% Grave accent  `           Left brace   {          Vertical bar  |
+% Right brace   }           Tilde        ~
+
+% A couple of exemplary definitions:
+
+\newcommand{\Nat}{{\mathbb N}}
+\newcommand{\Real}{{\mathbb R}}
+\def\lastname{Vinogradova}
+\begin{document}
+\begin{frontmatter}
+  \title{Formalizing Abstract Computability : Turing Categories in Coq} 
+  \author{Polina Vinogradova
+  	\thanksref{ALL}\thanksref{myemail}}
+  \address{Electrical Engineering and Computer Science\\ University of Ottawa\\
+    Ottawa, Canada} 
+ \author{Amy Felty\thanksref{coemail}}
+  \address{Electrical Engineering and Computer Science\\University of Ottawa\\
+    Ottawa, Canada} \thanks[ALL]{Thanks
+    to everyone who should be thanked} \thanks[myemail]{Email:
+    \href{mailto:myuserid@mydept.myinst.myedu} {\texttt{\normalshape
+        myuserid@mydept.myinst.myedu}}} \thanks[coemail]{Email:
+    \href{mailto:couserid@codept.coinst.coedu} {\texttt{\normalshape
+        couserid@codept.coinst.coedu}}}
+ \author{Philip Scott\thanksref{coemail}}
+  \address{Mathematics and Statistics\\ University of Ottawa\\
+    Ottawa, Canada} 
+
+\begin{abstract} 
+  	The concept of a recursive function has been extensively studied using traditional tools of computability theory. However, with the development of category-theoretic methods it has become possible to study recursion in a more abstract sense. The particular model this paper is structured around is known as a Turing category. The structure within a Turing category models the notion of partiality as well as recursive computation, and equips us with the tools of category theory to study these concepts. The goal of this work is to build a formal language description of this categorical model. Specifically, we use the Coq proof assistant to formulate informal definitions, propositions and proofs pertaining to Turing categories in the underlying formal language of Coq, the Calculus of Co-inductive Constructions (CIC). Furthermore, we instantiate the more general Turing category formalism with a CIC description of the category which explicitly models the language of partial recursive functions.
+\end{abstract}
+\begin{keyword}
+  Please list keywords from your paper here, separated by commas.
+\end{keyword}
+\end{frontmatter}
+\section{Introduction}\label{intro}
+Traditional computation on the natural numbers, as well as the theory of computability (or recursion) built around it, 
+has historically been the main approach to studying computation in mathematics and computer science, mainly due to its widespread applicability. More recently, there have been several attempts at capturing the essential properties of computation in a broader sense through various mathematical abstractions. Category theory appears to be both general and expressive enough to be the tool of choice for modeling computation in an abstract sense. 
+
+Many concepts of recursion theory have already been effectively modeled categorically, which gave good motivation to find the best possible categorical model to study recursion. The model we study in this thesis is a category-theoretic approach to exploring more general instances of computational systems, referred to as ``Turing Categories", originally introduced by Cockett and Hofstra in~\cite{Turing}. Turing categories are currently the most general computational model, because they model both total and partial computation and can have multiple non-isomorphic objects. 
+
+Our study of the Turing category computation model takes the form of building a type-theoretic formal language description (formalization) of the relevant concepts. The concepts we have selected to formalize lay the groundwork for (formally) proving abstract interpretations of standard recursion theorems. The key motivation behind taking this approach is the level of organization, consistency, and guaranteed correctness it provides in working with proofs and definitions for which informal formulations may omit important and interesting details. %Note that there has been another project formalizing restriction structure using Agda
+
+Turing category theory can be viewed as an (up until now) informally-presented language that can be used to describe (also informally-presented) formal computation. As computation on a physical computer is a formal procedure, it seems natural to verify that a formal description of it formally fits the selected categorical model. This is the motivating idea and the main objective of this work. There is not a huge amount of work done in this direction of research, specifically, formalizing a category as an instance of an abstract computational model. Furthermore, we are using intuitionistic logic to build the proofs and definitions in this formalization, which further differentiates it from traditional recursion theory reasoning. 
+
+Our intent was to first use an existing formal language and category theory library written in that language to specify the mathematical definitions found in the framework of the Turing Category abstract computation model, as well as the abstracted versions of other types of structures naturally occurring in the traditional computation model, then formally prove (the more abstract versions of) a number of the results from traditional recursion theory. The proof assistant chosen for this purpose is Coq, with the Calculus of (co)Inductive constructions as the underlying formal language, and . The existing category theory library we chose on top of which to build the Turing category formalization and examples, described in~\cite{timanyNewLib}. We also chose to adopt the style of definitions and formalization strategy used in this library. It appears to be the most comprehensive, easy to use and well-structured category theory Coq library. 
+
+In addition to formalizing the categorical concepts, the next key part of this project is formalizing several examples of categories which contain the types of structure relevant to the theory of Turing categories. These examples serve as test cases for the verification of the validity of the formal versions of the definitions and propositions constructed in the formal language (and hence, the related formally proved results about them) as well as to formally study these categories. The main example we focus on in this project is the formalization of traditional computation on the natural numbers and the categorical interpretation of all the structure found therein in order to prove that these indeed conform to the Turing category model formalism. We base our formalization of traditional recursion theory on a formalization due to V. Zammit~\cite{SmnForm}. 
+
+\section{Our Formalization}
+
+In this paper, we divide our explanation of the formalization project according to the Coq code files we have built, each of which contains the code for a particular type of structure or example. The section corresponding to each file discusses the informal definitions which the code formalizes, the challenges of reconciling the differences between formal and informal definitions, and existing related work. For the complete code, compilation instructions, and link to the original library over top of which our formalization is built, see
+
+\href{https://github.com/polinavino/Turing-Category-Formalization}
+{\texttt{https://github.com/polinavino/Turing-Category-Formalization}}
+
+
+{\bfseries Restriction.} In order to model partial computation using category theory, we need to first axiomatize partiality in a category. In a Turing category, this has been done informally, in terms of a restriction combinator~\cite{Restriction}. A restriction combinator takes a map $f : A \to B$ in a category $\mathsf{C}$ to an idempotent $\overline{f} : A \to A$ in a way that satisfies certain rules, and is in a sense representative of the `domain' of $f$. When a category $\mathsf{C}$ admits such a combinator, it is called a restriction category. 
+
+In addition to requiring a partiality structure, a category wherein we are able to axiomatize computation requires cartesian structure. Now, requiring strict cartesian structure to exist in a restriction category does not provide us with the correct machinery to perform computation. Thus, a weaker version of cartesian structure, which interacts well with restriction structure has been defined~\cite{Turing}. The restriction versions of products and terminal objects are called restriction (or partial) products and restriction-terminal objects, respectively. A category which admits these structures is called a cartesian restriction category. 
+
+In order to formalize these concepts we have followed the style of the category theory Coq library we have selected, using type classes to formalize categorical notions. Type classes are a versatile and convenient way to encapsulate terms and propositions about them into a single term representing its informal counterpart, with a number of features particularly useful for reasoning about category theory. The following is an example of formalizing the notion of a restriction combinator in this way:
+
+\indent {\tt \scriptsize Class {\bfseries RestrictionComb} (C : Category) : Type := \\
+	\indent \{ \\ 
+	
+	\indent \indent   rc : forall a b : C, Hom a b -> Hom a a ; \\
+	\indent \indent  rc1             : forall (a b : Obj), \\
+	\indent \indent \indent forall (f : Hom a b), f $\circ$ (rc a b f)= f ; \\
+	\indent \indent  rc2             : forall (a b c: Obj), \\
+	\indent \indent \indent forall (f : Hom a b)(g : Hom a c), \\
+	\indent \indent ... \\ 
+	\indent \}.}
+
+Here, the {\tt \small C : Category} is a parameter this class requires for instantiation, the term {\tt \small rc} in the body of the class is the mapping of {\tt \small f : Hom a b} (in the category {\tt \small C}) to {\tt \small f: Hom a a}, and the terms {\tt \small rc1, rc2, ...} are the axioms {\tt \small rc} must satisfy. The cartesian restriction structure is formalized using a similar approach, as are notions of a total subcategory, trivial restriction structure, etc~\cite{Turing}. We have also formalized and proved a number of results about cartesian restriction structure, including:
+
+\begin{itemize}
+	\item[(i)] A restriction terminal object in a Cartesian restriction category is a (true) terminal object in its total subcategory~\cite{Turing}
+	
+	\item[(ii)] Restriction products in a Cartesian restriction category are (true) products in its total subcategory~\cite{Turing}
+	
+	\item[(iii)] A Cartesian category with $\overline{f} = 1$ for all maps $f$ is a Cartesian restriction category~\cite{Turing}
+	
+	\item[(iv)] In an embedding-retraction pair $(m, r)$, $m$ is a total map~\cite{Restriction}
+	
+	\item[(v)] Ranges and Retractions lemma~\cite{MyThesis} 
+\end{itemize}
+
+{\bfseries PCA and CompA.} The underlying computational structure in a Turing category is a non-associative algebra called a partial combinatory algebra (abbreviated PCA), which consists of a pair $(A, \bullet)$ of an object $A \in \mathsf{C}$ and a map $A \times A \to A$ in a cartesian restriction category $\mathsf{C}$, as well a combinatory completeness condition that $(A, \bullet)$ must satisfy in this category. Give
+
+{\bfseries Turing.} A Turing category is a category that contains a special kind of structure that models computation. In particular, a category $\mathsf{T}$ is Turing if contains an object $A \in \mathsf{T}$, called a Turing object, as well as a morphism $\bullet : A \times A \to A$, called a Turing morphism, such each map in $\mathsf{T}$ factors via $\bullet$ in a specific way, similar to the factorization of maps within Cartesian Closed category (CCC) structure. Each object in $\mathsf{T}$ is a retract of the Turing object. Now the pair $(A, \bullet)$ is called a Turing structure and constitutes a PCA. This structure is not necessarily unique in $\mathsf{T}$.
+
+We have formalized Turing structure along with a number of results about it:
+
+\begin{itemize}
+	\item[(i)] Every object in a Turing category is a retract of a Turing object~\cite{Turing}
+	\item[(ii)] An object $B$ in a Turing category with Turing object $A$ is Turing if and only if it is a retract of $A$~\cite{Turing}
+	
+	\item[(iii)] A CCC with trivial restriction structure and an object $A$ of which every object is a retract is a Turing category
+	\item[(iv)] The halting domain is $m$-complete~\cite{Turing}
+	
+	\item[(v)] An equivalent characterization of Turing categories in terms of the Turing morphism and object embeddings~\cite{Turing}
+	
+\end{itemize}
+
+In addition, we have formalized the relationship between a Turing category $\mathsf{T}$ with a Turing object $A$ and the related categories Comp($A$) and Split(Comp($A$)). These categories embed in the following order:
+
+\indent Comp($\mathbb{A}$) $\subseteq$ $\mathsf{T}$ $\subseteq$ Split(Comp($\mathbb{A}$))
+
+{\bfseries Range.} Range structure in a category can be expressed in terms of another type of combinator which (whenever it exists in a category) is in a sense dual to the restriction combinator~\cite{RangeI}. The range combinator takes a map $f : A \to B$ to a map $\hat{f} : B \to B$, and, as with the restriction combinator, satisfied a number of axioms. It is related to the notion of open maps in a category, in that whenever all maps in a given category are open, it is a range category. We have chosen to formalize this particular abstraction because in the process of formalizing the motivating examples of the categories of sets and partial maps $\mathsf{Par}$ and the category of computable maps between $n$-fold products of the natural numbers, Comp($\mathbb{N}$), it became apparent that the process of representing partiality using a total formal language presented one of the biggest challenges as well as one of the greatest curiosities. We have formalized a number of results regarding the interactions between range structure and embedding-retraction pairs, as well as a criterion for a Turing category to admit cartesian range structure~\cite{MyThesis}.
+
+{\bfseries Par\_Cat.} The category $\mathsf{Par}$ is the motivating example for the categorical structure discussed above, including cartesian restriction and cartesian range structure, but not including Turing or PCA structure. Due to the total nature of computation in the CIC, it is impossible to directly represent a partial map. For this reason, we must define the type of the set of all maps $A \to B$ quite differently from the type of all total maps $A \to B$ in the category $\mathsf{Set}$ (i.e. {\tt \small A -> B}). This set of partial maps is a pair consisting of a domain predicate {\tt \small P : A -> Prop} together with a map of type {\tt \small forall x:A, P x -> B}, which takes two arguments: an `element' {\tt \small x} of the set {\tt \small A}, and a proof of the proposition {\tt \small P x}. 
+
+Having defined the type of partial maps in this way, we proceed to instantiating the {\tt \small Category} type class with the required objects, morphisms and proofs of associativity, etc. Using this category, we can now instantiate the restriction combinator. The restriction of a given map {\tt \small f : Hom a b} has the same domain predicate {\tt \small P} as the map {\tt \small f} itself, but the restriction of {\tt \small f} evaluated at {\tt \small x: a} and a proof {\tt \small pf : P x}. Note that once we have defined the restriction combinator mapping, we must also prove that it satisfies the required axioms in order to complete the instantiation. Following a similar format, we have also instantiated $\mathsf{Par}$ as a cartesian restriction category and a cartesian range category (i.e. defined all the required maps, objects, and completed the accompanying proofs).
+
+%More specifically, we are not using the language to represent a specific (explicitly defined) map, but rather we must be able compare two arbitrary maps, presenting a proof of an equality judgment. 
+{\bfseries CompN\_Cat.} The category $\mathsf{Par}$ contains a subcategory of maps that are partial recursive. That is, computable by a map which can be expressed in terms of the partial recursive constructors (zero, successor, projection, recursion, substitution and minimalization~\cite{Computability}). We use this (informally-presented) definition of formal computation as the basis for our formalization of the category of computable maps. We build our subcategory using an existing fomalization of this presentation of computation as well as the proof of the $S^m_n$ theorem completed using this definition~\cite{SmnForm}.
+
+This formalization gives the definition and the semantics of the language of partial recursive maps separately. The definition of the {\tt \small prf} language contains all the necessary constructors, while the semantics are given as an inductively-defined relation, 
+
+{\tt \scriptsize Inductive {\bfseries converges\_to} : prf -> list nat -> nat -> Prop} 
+
+\noindent where the resulting proposition is provable whenever, informally, the given partial recursive function, applied to the given list of natural numbers, outputs the natural number (given as the third argument). Note that this `output' is unique, so we are able to build a partial map in the {\tt \small Par\_Cat} sense, described above. In order to build a map that is Kleene-equal to the computation a particular {\tt \small f\_prf : prf} represents, we use the {\tt \small converges\_to} relation to give the domain predicate, and add a special case of an axiom of choice to select, given a list {\tt \small ln: list nat}, a natural number as output \textit{in the case when there is a proof that this output necessarily exists} (i.e. a proof {\tt \small pf : exists n, converges\_to f\_prf ln n}). 
+
+\section{Conclusion and Future Work}
+
+The framework we have built contains the necessary tools to study abstract recursion formally. Therefore, it gives us the advantage that we do not require to model partial functions using total functions or relations (or total functions built using relations) in order to study partial recursion using the (strongly normalizing) formal language CIC, with underlying intuitionistic logic. 
+
+There are a number of promising directions to advance this formalization, the most natural of which being the formalization of the Turing category-formulated abstraction of Rice's theorem, as well as the categorical concepts required for stating it formally, including joins and meets~\cite{Latvia}. Building on our framework even further, it would be an extremely interesting and innovative pursuit to use it to study computational complexity classes of total maps in Turing categories. Other options for building on this framework could be to formalize monoidal Turing categories (with differential structure) or conduct a formal
+study more focused on the PCA's (which, recall, are computation-modeling structures
+at the core of every Turing category) and relationships between them. 
+
+
+\section{Bibliographical references}\label{references}
+ENTCS employs the \texttt{plain} style of bibliographic references in
+which references are listed in alphabetical order, according the the
+first author's last name, and are sequentially numbered. Please
+utilize this style. We have a Bib\TeX\ style file, for those who wish
+to use it. It is the file \texttt{entcs.bst} which is included in this
+package. The basic rules we have employed are the following:
+\begin{itemize}
+\item Authors' names should be listed in alphabetical order, with the
+  first author's last name being the first listing, followed by the
+  author's initials or first name, and with the other authors names
+  listed as \emph{first name, last name}.
+\item Titles of articles in journals should be in \emph{emphasized}
+  type.
+\item Titles of books, monographs, etc.\ should be in quotations.
+\item Journal names should be in plain roman type.
+\item Journal volume numbers should be in boldface type, with the year
+  of publication immediately following in roman type, and enclosed in
+  parentheses.
+\item References to URLs on the net should be ``active'' and the URL
+  itself should be in typewriter font.
+\item Articles should include page numbers.
+\end{itemize}
+The criteria are illustrated in the following.
+
+\begin{thebibliography} %{10}\label{bibliography}
+	
+	\bibliographystyle{entcs}
+	\bibliography{thesisbib}
+	
+\end{thebibliography}
+
+\end{document}
